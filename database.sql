@@ -1,11 +1,23 @@
 -- ============================================================
 -- CineBook Cinema Ticket Booking System
--- Database Schema (matches ER Diagram)
--- Import this via phpMyAdmin > Import, or run in SQL tab
+-- Database Schema (Base Version)
+-- Import this via phpMyAdmin > Import, or run in the SQL tab.
+-- Re-running this file safely drops and recreates everything.
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS cinebook_db;
 USE cinebook_db;
+
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS transaction;
+DROP TABLE IF EXISTS reservation;
+DROP TABLE IF EXISTS payment_type;
+DROP TABLE IF EXISTS customer;
+DROP TABLE IF EXISTS movie;
+DROP TABLE IF EXISTS cinema;
+DROP TABLE IF EXISTS branch;
+DROP TABLE IF EXISTS manager;
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- ---------------------------------------------------
 -- MANAGER
@@ -38,6 +50,9 @@ CREATE TABLE cinema (
 
 -- ---------------------------------------------------
 -- MOVIE (checks -> Cinema)
+--   Certificate = film rating (e.g. PG13, NC16)
+--   Stars       = editorial star rating 1-5
+--   Status      = 'showing' or 'coming' (drives the home page sections)
 -- ---------------------------------------------------
 CREATE TABLE movie (
     Movie_ID INT AUTO_INCREMENT PRIMARY KEY,
@@ -46,9 +61,12 @@ CREATE TABLE movie (
     Showtime TIME,
     Description TEXT,
     Title VARCHAR(150) NOT NULL,
-    Poster VARCHAR(255) DEFAULT 'default_movie.jpg',
+    Poster VARCHAR(255) DEFAULT '',
     Genre VARCHAR(80),
     Duration_Min INT,
+    Certificate VARCHAR(10) DEFAULT 'PG',
+    Stars TINYINT DEFAULT 4,
+    Status VARCHAR(20) DEFAULT 'showing',
     Cinema_ID INT,
     FOREIGN KEY (Cinema_ID) REFERENCES cinema(Cinema_ID)
 );
@@ -124,11 +142,21 @@ INSERT INTO cinema (Cinema_Name, Cinema_Cont, Bran_ID) VALUES
 ('Silver Village Jurong', '65001234', 1),
 ('Silver Village Orchard', '65005678', 2);
 
-INSERT INTO movie (Location, Date, Showtime, Description, Title, Genre, Duration_Min, Cinema_ID) VALUES
-('Hall 1', '2026-09-05', '14:30:00', 'A thrilling sci-fi adventure across galaxies.', 'Stellar Horizon', 'Sci-Fi', 128, 1),
-('Hall 2', '2026-09-05', '18:00:00', 'A heartwarming story of friendship and courage.', 'The Last Lighthouse', 'Drama', 105, 1),
-('Hall 1', '2026-09-06', '20:15:00', 'Non-stop action as a team races against time.', 'Midnight Protocol', 'Action', 115, 2),
-('Hall 3', '2026-09-06', '16:00:00', 'A laugh-out-loud comedy about family chaos.', 'Weekend Warriors', 'Comedy', 98, 2);
+-- Now Showing
+INSERT INTO movie (Location, Date, Showtime, Description, Title, Genre, Duration_Min, Certificate, Stars, Status, Cinema_ID) VALUES
+('Hall 1', '2026-09-20', '14:30:00', 'A brilliant neurosurgeon is drawn into the world of the mystic arts on a journey of physical and spiritual healing, confronting a danger that threatens the entire multiverse.', 'Stellar Horizon', 'Sci-Fi', 128, 'PG13', 5, 'showing', 1),
+('Hall 2', '2026-09-20', '18:00:00', 'A heartwarming story of friendship and courage set on a remote coast, following a keeper who guards more than just the light.', 'The Last Lighthouse', 'Drama', 105, 'PG', 4, 'showing', 1),
+('Hall 1', '2026-09-21', '20:15:00', 'Non-stop action as an elite team races against time to stop a global threat hidden in plain sight.', 'Midnight Protocol', 'Action', 115, 'NC16', 3, 'showing', 2),
+('Hall 3', '2026-09-21', '16:00:00', 'A laugh-out-loud comedy about a chaotic family weekend that spirals hilariously out of control.', 'Weekend Warriors', 'Comedy', 98, 'PG', 4, 'showing', 2),
+('Hall 2', '2026-09-22', '19:30:00', 'A gripping thriller where nothing is as it seems and every clue leads deeper into the dark.', 'Silent Echo', 'Action', 122, 'M18', 4, 'showing', 1),
+('Hall 4', '2026-09-22', '15:15:00', 'An animated adventure across enchanted lands, full of heart, wonder and unlikely heroes.', 'Painted Skies', 'Comedy', 92, 'PG', 5, 'showing', 2);
+
+-- Coming Soon
+INSERT INTO movie (Location, Date, Showtime, Description, Title, Genre, Duration_Min, Certificate, Stars, Status, Cinema_ID) VALUES
+('Hall 1', '2026-10-10', '20:00:00', 'A kingdom rises and a hero is forged in this sweeping epic of loyalty, betrayal and destiny.', 'Crown of Ash', 'Drama', 134, 'PG13', 4, 'coming', 1),
+('Hall 2', '2026-10-18', '21:00:00', 'When the city sleeps, one detective uncovers a conspiracy that reaches the highest towers.', 'Neon Alibi', 'Action', 118, 'NC16', 4, 'coming', 2),
+('Hall 3', '2026-11-01', '17:30:00', 'A tiny hero with a big heart proves that size is never a limit when courage leads the way.', 'Pocket Dynamo', 'Comedy', 101, 'PG', 3, 'coming', 1),
+('Hall 4', '2026-11-14', '19:45:00', 'Two rivals, one prize, and a race across the stars that will decide the fate of a galaxy.', 'Orbit Run', 'Sci-Fi', 126, 'PG13', 5, 'coming', 2);
 
 INSERT INTO payment_type (Payment_Type) VALUES
 ('Credit Card'), ('Debit Card'), ('PayNow');

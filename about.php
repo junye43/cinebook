@@ -13,6 +13,7 @@ reservations and transactions to deliver a smooth end-to-end booking experience.
 </p>
 
 <h2 class="section-title">Our Branches</h2>
+<div class="table-wrap">
 <table class="data-table">
     <thead><tr><th>Cinema</th><th>Branch Location</th><th>Contact</th></tr></thead>
     <tbody>
@@ -30,5 +31,6 @@ reservations and transactions to deliver a smooth end-to-end booking experience.
     <?php endwhile; ?>
     </tbody>
 </table>
+</div>
 
 <?php include 'includes/footer.php'; $conn->close(); ?>

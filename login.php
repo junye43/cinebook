@@ -1,30 +1,37 @@
 <?php
 $pageTitle = "Login";
 require_once 'includes/db_connect.php';
-if (session_status() === PHP_SESSION_NONE) session_start();
 
 $errors = [];
+// Where to send the user after a successful login (validated to a local page).
+$redirect = safe_local_redirect($_POST['redirect'] ?? $_GET['redirect'] ?? '', 'index.php');
+
+// Already logged in? Go straight there.
+if (is_logged_in()) { header("Location: $redirect"); exit; }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) $errors[] = "Your session expired. Please try again.";
+
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    $stmt = $conn->prepare("SELECT Cust_ID, Cust_Name, Password FROM customer WHERE Email = ?");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    if (empty($errors)) {
+        $stmt = $conn->prepare("SELECT Cust_ID, Cust_Name, Password FROM customer WHERE Email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
-    if ($result->num_rows === 1) {
-        $user = $result->fetch_assoc();
-        if (password_verify($password, $user['Password'])) {
-            $_SESSION['cust_id'] = $user['Cust_ID'];
-            $_SESSION['cust_name'] = $user['Cust_Name'];
-            header("Location: index.php");
-            exit;
-        } else {
-            $errors[] = "Incorrect email or password.";
+        if ($result->num_rows === 1) {
+            $user = $result->fetch_assoc();
+            if (password_verify($password, $user['Password'])) {
+                session_regenerate_id(true);              // prevent session fixation
+                $_SESSION['cust_id'] = $user['Cust_ID'];
+                $_SESSION['cust_name'] = $user['Cust_Name'];
+                header("Location: $redirect");
+                exit;
+            }
         }
-    } else {
+        // Same message whether the email or password is wrong (no user enumeration)
         $errors[] = "Incorrect email or password.";
     }
 }
@@ -33,7 +40,8 @@ include 'includes/header.php';
 ?>
 
 <div class="form-panel">
-    <h2>Login</h2>
+    <h2>Welcome back</h2>
+    <p class="form-sub">Log in to book tickets and manage your reservations.</p>
 
     <?php if (!empty($errors)): ?>
         <div class="error-msg">
@@ -41,18 +49,38 @@ include 'includes/header.php';
         </div>
     <?php endif; ?>
 
-    <form method="POST" action="login.php">
+    <?php if (isset($_GET['redirect']) && $_SERVER['REQUEST_METHOD'] !== 'POST'): ?>
+        <div class="success-msg">Please log in to continue to your booking.</div>
+    <?php endif; ?>
+
+    <form method="POST" action="login.php" id="loginForm">
+        <?php echo csrf_field(); ?>
+        <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect); ?>">
         <div class="form-group">
             <label for="email">Email</label>
-            <input type="email" id="email" name="email" required>
+            <input type="email" id="email" name="email" required
+                   value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
         </div>
         <div class="form-group">
             <label for="password">Password</label>
             <input type="password" id="password" name="password" required>
         </div>
-        <button type="submit" class="btn">Login</button>
+        <button type="submit" class="btn btn-block">Login</button>
     </form>
-    <p style="margin-top:16px;color:var(--text-muted);">No account yet? <a href="register.php" style="color:var(--gold);">Register here</a>.</p>
+    <p class="form-footer-note">No account yet?
+        <a href="register.php<?php echo isset($_GET['redirect']) ? '?redirect=' . urlencode($redirect) : ''; ?>">Register here</a>.
+    </p>
 </div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', function (e) {
+    var email = document.getElementById('email').value.trim();
+    var pw = document.getElementById('password').value;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || pw.length < 1) {
+        alert('Please enter a valid email and your password.');
+        e.preventDefault();
+    }
+});
+</script>
 
 <?php include 'includes/footer.php'; $conn->close(); ?>

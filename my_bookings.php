@@ -1,22 +1,26 @@
 <?php
 $pageTitle = "My Bookings";
 require_once 'includes/db_connect.php';
-if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!isset($_SESSION['cust_id'])) {
-    header("Location: login.php");
-    exit;
-}
-$custId = intval($_SESSION['cust_id']);
+require_login('my_bookings.php');
+$custId = current_user_id();
+$notice = "";
 
 // Handle seat update (demonstrates SQL UPDATE)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['res_code'], $_POST['new_seats'])) {
-    $resCode = intval($_POST['res_code']);
-    $newSeats = trim($_POST['new_seats']);
-    if ($newSeats !== '') {
-        $stmt = $conn->prepare("UPDATE reservation SET Seats = ? WHERE Res_Code = ? AND Cust_ID = ?");
-        $stmt->bind_param("sii", $newSeats, $resCode, $custId);
-        $stmt->execute();
+    if (!csrf_verify()) {
+        $notice = "Your session expired. Please try again.";
+    } else {
+        $resCode = intval($_POST['res_code']);
+        $newSeats = strtoupper(trim($_POST['new_seats']));
+        if (!preg_match('/^[A-Z][0-9]{1,2}(,\s*[A-Z][0-9]{1,2})*$/', $newSeats)) {
+            $notice = "Please enter valid seat(s), e.g. A1, A2.";
+        } else {
+            $stmt = $conn->prepare("UPDATE reservation SET Seats = ? WHERE Res_Code = ? AND Cust_ID = ?");
+            $stmt->bind_param("sii", $newSeats, $resCode, $custId);
+            $stmt->execute();
+            $notice = $stmt->affected_rows > 0 ? "Seats updated." : "No change made.";
+        }
     }
 }
 
@@ -35,6 +39,11 @@ include 'includes/header.php';
 
 <h1 class="section-title">My Bookings</h1>
 
+<?php if ($notice !== ''): ?>
+    <div class="success-msg"><?php echo htmlspecialchars($notice); ?></div>
+<?php endif; ?>
+
+<div class="table-wrap">
 <table class="data-table">
     <thead>
         <tr><th>Movie</th><th>Date</th><th>Time</th><th>Seats</th><th>Tickets</th><th>Total Paid</th><th>Update Seats</th></tr>
@@ -50,10 +59,11 @@ include 'includes/header.php';
                     <td><?php echo intval($b['Num_Tickets']); ?></td>
                     <td>$<?php echo number_format($b['Total_Payment'] ?? 0, 2); ?></td>
                     <td>
-                        <form method="POST" action="my_bookings.php" style="display:flex;gap:6px;">
+                        <form method="POST" action="my_bookings.php" style="display:flex;gap:8px;">
+                            <?php echo csrf_field(); ?>
                             <input type="hidden" name="res_code" value="<?php echo $b['Res_Code']; ?>">
-                            <input type="text" name="new_seats" placeholder="New seats" style="width:100px;padding:6px;border-radius:6px;">
-                            <button type="submit" class="btn" style="padding:6px 12px;">Update</button>
+                            <input type="text" name="new_seats" placeholder="e.g. A1, A2" style="width:120px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-3);color:var(--text);">
+                            <button type="submit" class="btn btn-sm">Update</button>
                         </form>
                     </td>
                 </tr>
@@ -63,5 +73,6 @@ include 'includes/header.php';
         <?php endif; ?>
     </tbody>
 </table>
+</div>
 
 <?php include 'includes/footer.php'; $conn->close(); ?>
