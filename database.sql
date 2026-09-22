@@ -144,19 +144,19 @@ INSERT INTO cinema (Cinema_Name, Cinema_Cont, Bran_ID) VALUES
 
 -- Now Showing
 INSERT INTO movie (Location, Date, Showtime, Description, Title, Poster, Genre, Duration_Min, Certificate, Stars, Status, Cinema_ID) VALUES
-('Hall 1', '2026-09-20', '14:30:00', 'A brilliant neurosurgeon is drawn into the world of the mystic arts on a journey of physical and spiritual healing, confronting a danger that threatens the entire multiverse.', 'Stellar Horizon', 'stellarhorizon.jpg', 'Sci-Fi', 128, 'PG13', 5, 'showing', 1),
-('Hall 2', '2026-09-20', '18:00:00', 'A heartwarming story of friendship and courage set on a remote coast, following a keeper who guards more than just the light.', 'The Last Lighthouse', 'thelastlighthouse.jpg', 'Drama', 105, 'PG', 4, 'showing', 1),
-('Hall 1', '2026-09-21', '20:15:00', 'Non-stop action as an elite team races against time to stop a global threat hidden in plain sight.', 'Midnight Protocol', 'midnightprotocol.jpg', 'Action', 115, 'NC16', 3, 'showing', 2),
-('Hall 3', '2026-09-21', '16:00:00', 'A laugh-out-loud comedy about a chaotic family weekend that spirals hilariously out of control.', 'Weekend Warriors', 'weekendwarriors.jpg', 'Comedy', 98, 'PG', 4, 'showing', 2),
-('Hall 2', '2026-09-22', '19:30:00', 'A gripping thriller where nothing is as it seems and every clue leads deeper into the dark.', 'Silent Echo', 'silentecho.jpg', 'Action', 122, 'M18', 4, 'showing', 1),
-('Hall 4', '2026-09-22', '15:15:00', 'An animated adventure across enchanted lands, full of heart, wonder and unlikely heroes.', 'Painted Skies', 'paintedskies.jpg', 'Comedy', 92, 'PG', 5, 'showing', 2);
+('Hall 1', '2026-09-20', '14:30:00', 'A brilliant neurosurgeon is drawn into the world of the mystic arts on a journey of physical and spiritual healing, confronting a danger that threatens the entire multiverse.', 'Stellar Horizon', 'stellarhorizon.png', 'Sci-Fi', 128, 'PG13', 5, 'showing', 1),
+('Hall 2', '2026-09-20', '18:00:00', 'A heartwarming story of friendship and courage set on a remote coast, following a keeper who guards more than just the light.', 'The Last Lighthouse', 'thelastlighthouse.png', 'Drama', 105, 'PG', 4, 'showing', 1),
+('Hall 1', '2026-09-21', '20:15:00', 'Non-stop action as an elite team races against time to stop a global threat hidden in plain sight.', 'Midnight Protocol', 'midnightprotocol.png', 'Action', 115, 'NC16', 3, 'showing', 2),
+('Hall 3', '2026-09-21', '16:00:00', 'A laugh-out-loud comedy about a chaotic family weekend that spirals hilariously out of control.', 'Weekend Warriors', 'weekendwarriors.png', 'Comedy', 98, 'PG', 4, 'showing', 2),
+('Hall 2', '2026-09-22', '19:30:00', 'A gripping thriller where nothing is as it seems and every clue leads deeper into the dark.', 'Silent Echo', 'silentecho.png', 'Action', 122, 'M18', 4, 'showing', 1),
+('Hall 4', '2026-09-22', '15:15:00', 'An animated adventure across enchanted lands, full of heart, wonder and unlikely heroes.', 'Painted Skies', 'paintedskies.png', 'Comedy', 92, 'PG', 5, 'showing', 2);
 
 -- Coming Soon
 INSERT INTO movie (Location, Date, Showtime, Description, Title, Poster, Genre, Duration_Min, Certificate, Stars, Status, Cinema_ID) VALUES
-('Hall 1', '2026-10-10', '20:00:00', 'A kingdom rises and a hero is forged in this sweeping epic of loyalty, betrayal and destiny.', 'Crown of Ash', 'crownofash.jpg', 'Drama', 134, 'PG13', 4, 'coming', 1),
-('Hall 2', '2026-10-18', '21:00:00', 'When the city sleeps, one detective uncovers a conspiracy that reaches the highest towers.', 'Neon Alibi', 'neonalibi.jpg', 'Action', 118, 'NC16', 4, 'coming', 2),
-('Hall 3', '2026-11-01', '17:30:00', 'A tiny hero with a big heart proves that size is never a limit when courage leads the way.', 'Pocket Dynamo', 'pocketdynamo.jpg', 'Comedy', 101, 'PG', 3, 'coming', 1),
-('Hall 4', '2026-11-14', '19:45:00', 'Two rivals, one prize, and a race across the stars that will decide the fate of a galaxy.', 'Orbit Run', 'orbitrun.jpg', 'Sci-Fi', 126, 'PG13', 5, 'coming', 2);
+('Hall 1', '2026-10-10', '20:00:00', 'A kingdom rises and a hero is forged in this sweeping epic of loyalty, betrayal and destiny.', 'Crown of Ash', 'crownofash.png', 'Drama', 134, 'PG13', 4, 'coming', 1),
+('Hall 2', '2026-10-18', '21:00:00', 'When the city sleeps, one detective uncovers a conspiracy that reaches the highest towers.', 'Neon Alibi', 'neonalibi.png', 'Action', 118, 'NC16', 4, 'coming', 2),
+('Hall 3', '2026-11-01', '17:30:00', 'A tiny hero with a big heart proves that size is never a limit when courage leads the way.', 'Pocket Dynamo', 'pocketdynamo.png', 'Comedy', 101, 'PG', 3, 'coming', 1),
+('Hall 4', '2026-11-14', '19:45:00', 'Two rivals, one prize, and a race across the stars that will decide the fate of a galaxy.', 'Orbit Run', 'orbitrun.png', 'Sci-Fi', 126, 'PG13', 5, 'coming', 2);
 
 INSERT INTO payment_type (Payment_Type) VALUES
 ('Credit Card'), ('Debit Card'), ('PayNow');
