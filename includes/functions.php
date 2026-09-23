@@ -73,3 +73,18 @@ function poster_style($poster) {
     if ($f === '') return '';
     return ' style="background-image:url(\'images/posters/' . htmlspecialchars(rawurlencode($f)) . '\')"';
 }
+
+function backdrop_style($file)
+{
+    if(!$file){
+        return '';
+    }
+    $path = __DIR__ . '/../images/backdrops/' . $file;
+    if(file_exists($path))
+    {
+        return ' style="background-image:url(\'images/backdrops/' 
+        . htmlspecialchars(rawurlencode($file)) 
+        . '\')"';
+    }
+    return '';
+}
