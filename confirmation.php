@@ -5,7 +5,7 @@ require_once 'includes/db_connect.php';
 $resId = isset($_GET['res_id']) ? intval($_GET['res_id']) : 0;
 
 $stmt = $conn->prepare("SELECT r.Res_Code, r.Name, r.Date, r.Time, r.Seats, r.Num_Tickets,
-                                m.Title, m.Genre, c.Cinema_Name, t.Total_Payment, t.Trans_No, p.Payment_Type
+                                m.Title, m.Genre, m.Poster, c.Cinema_Name, t.Total_Payment, t.Trans_No, p.Payment_Type
                          FROM reservation r
                          JOIN movie m ON r.Movie_ID = m.Movie_ID
                          JOIN cinema c ON m.Cinema_ID = c.Cinema_ID
@@ -25,6 +25,10 @@ include 'includes/header.php';
         <p>Your booking is confirmed. Thank you for choosing CineBook, <?php echo htmlspecialchars($booking['Name']); ?>!</p>
 
         <div class="ticket">
+            <?php if (poster_file($booking['Poster']) !== ''): ?>
+                <img class="ticket-poster" src="images/posters/<?php echo htmlspecialchars(rawurlencode($booking['Poster'])); ?>"
+                     alt="<?php echo htmlspecialchars($booking['Title']); ?> poster">
+            <?php endif; ?>
             <span class="ticket-badge"><?php echo intval($booking['Num_Tickets']); ?> movie ticket(s)</span>
             <div class="ticket-grid">
                 <div><div class="lbl">Movie</div><div class="val"><?php echo htmlspecialchars($booking['Title']); ?></div></div>

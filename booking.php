@@ -20,6 +20,15 @@ $prefillEmail   = $me['Email'] ?? '';
 $prefillContact = $me['Cust_Number'] ?? '';
 
 $movies = $conn->query("SELECT Movie_ID, Title, Date, Showtime FROM movie WHERE Status = 'showing' ORDER BY Date, Showtime");
+
+// Preselected movie (for the page banner image)
+$bookMovie = null;
+if ($preselectMovie) {
+    $st = $conn->prepare("SELECT Title, Genre, Poster, Backdrop FROM movie WHERE Movie_ID = ?");
+    $st->bind_param("i", $preselectMovie);
+    $st->execute();
+    $bookMovie = $st->get_result()->fetch_assoc();
+}
 $paymentTypes = $conn->query("SELECT Payment_Type_ID, Payment_Type FROM payment_type");
 
 // ---- Build "already booked" seat map per showtime (server-side, no AJAX) ----
@@ -99,6 +108,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 include 'includes/header.php';
 ?>
+
+<?php $bookBanner = $bookMovie ? backdrop_style($bookMovie['Backdrop']) : ''; ?>
+<?php if ($bookBanner !== ''): ?>
+    <div class="detail-banner has-img" data-genre="<?php echo htmlspecialchars($bookMovie['Genre']); ?>"<?php echo $bookBanner; ?>>
+        <span class="poster-title serif" style="font-size:1.7em;position:relative;z-index:2;">Now Booking &middot; <?php echo htmlspecialchars($bookMovie['Title']); ?></span>
+    </div>
+<?php else: ?>
+    <img class="page-banner" src="images/ui/banner.svg" alt="CineBook Cinemas — Book Tickets">
+<?php endif; ?>
 
 <h1 class="detail-title" style="font-size:1.9em;margin-bottom:4px;">Book Your Tickets</h1>
 <p class="form-sub">Choose a showtime, pick your seats, and confirm your booking.</p>

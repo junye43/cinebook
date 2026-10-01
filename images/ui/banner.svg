@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 260" role="img" aria-label="CineBook Cinemas banner">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#161616"/>
+      <stop offset="1" stop-color="#0b0b0b"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffd678"/>
+      <stop offset="1" stop-color="#eebc4d"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.8" cy="0.2" r="0.8">
+      <stop offset="0" stop-color="#eebc4d" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#eebc4d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="260" fill="url(#bg)"/>
+  <rect width="1200" height="260" fill="url(#glow)"/>
+
+  <!-- film strip perforations, top and bottom -->
+  <g fill="#eebc4d" opacity="0.85">
+    <g id="perf-top">
+      <!-- generated row of holes -->
+    </g>
+  </g>
+  <g fill="#1c1c1c">
+    <rect x="0" y="0" width="1200" height="26"/>
+    <rect x="0" y="234" width="1200" height="26"/>
+  </g>
+  <g fill="#eebc4d">
+    <!-- top holes -->
+    <rect x="20"  y="9" width="22" height="8" rx="2"/><rect x="70"  y="9" width="22" height="8" rx="2"/>
+    <rect x="120" y="9" width="22" height="8" rx="2"/><rect x="170" y="9" width="22" height="8" rx="2"/>
+    <rect x="220" y="9" width="22" height="8" rx="2"/><rect x="270" y="9" width="22" height="8" rx="2"/>
+    <rect x="320" y="9" width="22" height="8" rx="2"/><rect x="370" y="9" width="22" height="8" rx="2"/>
+    <rect x="420" y="9" width="22" height="8" rx="2"/><rect x="470" y="9" width="22" height="8" rx="2"/>
+    <rect x="520" y="9" width="22" height="8" rx="2"/><rect x="570" y="9" width="22" height="8" rx="2"/>
+    <rect x="620" y="9" width="22" height="8" rx="2"/><rect x="670" y="9" width="22" height="8" rx="2"/>
+    <rect x="720" y="9" width="22" height="8" rx="2"/><rect x="770" y="9" width="22" height="8" rx="2"/>
+    <rect x="820" y="9" width="22" height="8" rx="2"/><rect x="870" y="9" width="22" height="8" rx="2"/>
+    <rect x="920" y="9" width="22" height="8" rx="2"/><rect x="970" y="9" width="22" height="8" rx="2"/>
+    <rect x="1020" y="9" width="22" height="8" rx="2"/><rect x="1070" y="9" width="22" height="8" rx="2"/>
+    <rect x="1120" y="9" width="22" height="8" rx="2"/><rect x="1158" y="9" width="22" height="8" rx="2"/>
+    <!-- bottom holes -->
+    <rect x="20"  y="243" width="22" height="8" rx="2"/><rect x="70"  y="243" width="22" height="8" rx="2"/>
+    <rect x="120" y="243" width="22" height="8" rx="2"/><rect x="170" y="243" width="22" height="8" rx="2"/>
+    <rect x="220" y="243" width="22" height="8" rx="2"/><rect x="270" y="243" width="22" height="8" rx="2"/>
+    <rect x="320" y="243" width="22" height="8" rx="2"/><rect x="370" y="243" width="22" height="8" rx="2"/>
+    <rect x="420" y="243" width="22" height="8" rx="2"/><rect x="470" y="243" width="22" height="8" rx="2"/>
+    <rect x="520" y="243" width="22" height="8" rx="2"/><rect x="570" y="243" width="22" height="8" rx="2"/>
+    <rect x="620" y="243" width="22" height="8" rx="2"/><rect x="670" y="243" width="22" height="8" rx="2"/>
+    <rect x="720" y="243" width="22" height="8" rx="2"/><rect x="770" y="243" width="22" height="8" rx="2"/>
+    <rect x="820" y="243" width="22" height="8" rx="2"/><rect x="870" y="243" width="22" height="8" rx="2"/>
+    <rect x="920" y="243" width="22" height="8" rx="2"/><rect x="970" y="243" width="22" height="8" rx="2"/>
+    <rect x="1020" y="243" width="22" height="8" rx="2"/><rect x="1070" y="243" width="22" height="8" rx="2"/>
+    <rect x="1120" y="243" width="22" height="8" rx="2"/><rect x="1158" y="243" width="22" height="8" rx="2"/>
+  </g>
+
+  <!-- clapperboard -->
+  <g transform="translate(70,96)">
+    <rect x="0" y="18" width="96" height="66" rx="6" fill="#222"/>
+    <rect x="0" y="0" width="96" height="24" rx="4" fill="url(#gold)"/>
+    <g fill="#161616">
+      <polygon points="6,0 20,0 10,24 -4,24"/>
+      <polygon points="30,0 44,0 34,24 20,24"/>
+      <polygon points="54,0 68,0 58,24 44,24"/>
+      <polygon points="78,0 92,0 82,24 68,24"/>
+    </g>
+  </g>
+
+  <!-- wordmark + tagline -->
+  <text x="200" y="120" font-family="Georgia, 'Times New Roman', serif" font-size="58" font-weight="bold" fill="#f5f5f5">Cine<tspan fill="url(#gold)">Book</tspan></text>
+  <text x="202" y="152" font-family="Georgia, serif" font-size="18" letter-spacing="6" fill="#eebc4d">C I N E M A S</text>
+  <text x="202" y="186" font-family="'Segoe UI', Arial, sans-serif" font-size="20" fill="#c9c9c9">Your seat at the movies awaits.</text>
+
+  <!-- stars -->
+  <g fill="url(#gold)" transform="translate(980,110)">
+    <text font-family="Arial" font-size="30" letter-spacing="6">&#9733;&#9733;&#9733;&#9733;&#9733;</text>
+  </g>
+</svg>

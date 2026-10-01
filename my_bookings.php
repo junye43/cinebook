@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['res_code'], $_POST['n
     }
 }
 
-$stmt = $conn->prepare("SELECT r.Res_Code, r.Date, r.Time, r.Seats, r.Num_Tickets, m.Title, t.Total_Payment
+$stmt = $conn->prepare("SELECT r.Res_Code, r.Date, r.Time, r.Seats, r.Num_Tickets, m.Title, m.Poster, t.Total_Payment
                          FROM reservation r
                          JOIN movie m ON r.Movie_ID = m.Movie_ID
                          LEFT JOIN transaction t ON t.Res_ID = r.Res_Code
@@ -46,12 +46,17 @@ include 'includes/header.php';
 <div class="table-wrap">
 <table class="data-table">
     <thead>
-        <tr><th>Movie</th><th>Date</th><th>Time</th><th>Seats</th><th>Tickets</th><th>Total Paid</th><th>Update Seats</th></tr>
+        <tr><th></th><th>Movie</th><th>Date</th><th>Time</th><th>Seats</th><th>Tickets</th><th>Total Paid</th><th>Update Seats</th></tr>
     </thead>
     <tbody>
         <?php if ($bookings->num_rows > 0): ?>
             <?php while ($b = $bookings->fetch_assoc()): ?>
                 <tr>
+                    <td>
+                        <?php if (poster_file($b['Poster']) !== ''): ?>
+                            <img class="poster-thumb" src="images/posters/<?php echo htmlspecialchars(rawurlencode($b['Poster'])); ?>" alt="<?php echo htmlspecialchars($b['Title']); ?> poster">
+                        <?php endif; ?>
+                    </td>
                     <td><?php echo htmlspecialchars($b['Title']); ?></td>
                     <td><?php echo date("d M Y", strtotime($b['Date'])); ?></td>
                     <td><?php echo date("g:i A", strtotime($b['Time'])); ?></td>
@@ -69,7 +74,7 @@ include 'includes/header.php';
                 </tr>
             <?php endwhile; ?>
         <?php else: ?>
-            <tr><td colspan="7">You have no bookings yet. <a href="movies.php" style="color:var(--gold);">Browse movies</a>.</td></tr>
+            <tr><td colspan="8">You have no bookings yet. <a href="movies.php" style="color:var(--gold);">Browse movies</a>.</td></tr>
         <?php endif; ?>
     </tbody>
 </table>

@@ -40,6 +40,7 @@ include 'includes/header.php';
 ?>
 
 <div class="form-panel">
+    <img class="page-banner" src="images/ui/banner.svg" alt="CineBook Cinemas">
     <h2>Welcome back</h2>
     <p class="form-sub">Log in to book tickets and manage your reservations.</p>
 

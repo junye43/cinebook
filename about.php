@@ -3,6 +3,8 @@ $pageTitle = "About Us";
 include 'includes/header.php';
 ?>
 
+<img class="page-banner" src="images/ui/banner.svg" alt="CineBook Cinemas — your seat at the movies awaits">
+
 <h1 class="section-title">About CineBook</h1>
 <p style="max-width:700px;">
 CineBook is an online cinema ticket booking platform that lets movie-goers browse showtimes

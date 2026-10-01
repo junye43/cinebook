@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 640" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#666"/>
+    </marker>
+    <style>
+      .box{ fill:#ffffff; stroke:#333; stroke-width:1.5; rx:8; }
+      .bar{ fill:#eebc4d; }
+      .t{ fill:#1a1a1a; font-size:14px; font-weight:600; }
+      .s{ fill:#777; font-size:11px; }
+      .flow{ stroke:#666; stroke-width:1.6; fill:none; marker-end:url(#arrow); }
+      .gate{ stroke:#c0392b; stroke-width:1.6; stroke-dasharray:5 4; fill:none; marker-end:url(#arrow); }
+      .zone{ fill:#faf7ef; stroke:#e6dcc0; stroke-width:1; }
+      .zlabel{ fill:#b9902a; font-size:12px; font-weight:700; letter-spacing:1px; }
+    </style>
+  </defs>
+
+  <rect width="980" height="640" fill="#ffffff"/>
+  <text x="24" y="34" font-size="20" font-weight="700" fill="#1a1a1a">CineBook — Site Map / Storyboard</text>
+  <text x="24" y="54" class="s">Header nav (Home · Movies · Book Tickets · Theatres · Login/Register or Your Tickets/Logout · Search) appears on every page.</text>
+
+  <!-- zones -->
+  <rect class="zone" x="24" y="74" width="470" height="540" rx="10"/>
+  <text x="40" y="98" class="zlabel">BROWSE &amp; BOOK</text>
+  <rect class="zone" x="516" y="74" width="440" height="540" rx="10"/>
+  <text x="532" y="98" class="zlabel">ACCOUNT</text>
+
+  <!-- HOME -->
+  <g transform="translate(360,116)">
+    <rect class="box" width="180" height="54" rx="8"/><rect class="bar" width="180" height="6" rx="3"/>
+    <text x="90" y="30" text-anchor="middle" class="t">Home (index.php)</text>
+    <text x="90" y="46" text-anchor="middle" class="s">hero carousel + listings</text>
+  </g>
+
+  <!-- Browse column -->
+  <g transform="translate(60,210)">
+    <rect class="box" width="180" height="54" rx="8"/><rect class="bar" width="180" height="6" rx="3"/>
+    <text x="90" y="30" text-anchor="middle" class="t">Movies (movies.php)</text>
+    <text x="90" y="46" text-anchor="middle" class="s">search + cinema filter · TABLE-like grid</text>
+  </g>
+  <g transform="translate(60,310)">
+    <rect class="box" width="180" height="54" rx="8"/><rect class="bar" width="180" height="6" rx="3"/>
+    <text x="90" y="30" text-anchor="middle" class="t">Movie Details</text>
+    <text x="90" y="46" text-anchor="middle" class="s">movie_details.php</text>
+  </g>
+  <g transform="translate(60,410)">
+    <rect class="box" width="180" height="54" rx="8"/><rect class="bar" width="180" height="6" rx="3"/>
+    <text x="90" y="28" text-anchor="middle" class="t">Book Tickets</text>
+    <text x="90" y="45" text-anchor="middle" class="s">booking.php · FORM + seat map</text>
+  </g>
+  <g transform="translate(60,510)">
+    <rect class="box" width="180" height="54" rx="8"/><rect class="bar" width="180" height="6" rx="3"/>
+    <text x="90" y="28" text-anchor="middle" class="t">Confirmation</text>
+    <text x="90" y="45" text-anchor="middle" class="s">confirmation.php · e-ticket</text>
+  </g>
+
+  <!-- Theatres/About -->
+  <g transform="translate(290,210)">
+    <rect class="box" width="180" height="54" rx="8"/><rect class="bar" width="180" height="6" rx="3"/>
+    <text x="90" y="30" text-anchor="middle" class="t">Theatres (about.php)</text>
+    <text x="90" y="46" text-anchor="middle" class="s">branches TABLE</text>
+  </g>
+
+  <!-- Account column -->
+  <g transform="translate(560,210)">
+    <rect class="box" width="170" height="54" rx="8"/><rect class="bar" width="170" height="6" rx="3"/>
+    <text x="85" y="30" text-anchor="middle" class="t">Login (login.php)</text>
+    <text x="85" y="46" text-anchor="middle" class="s">FORM + validation</text>
+  </g>
+  <g transform="translate(760,210)">
+    <rect class="box" width="170" height="54" rx="8"/><rect class="bar" width="170" height="6" rx="3"/>
+    <text x="85" y="30" text-anchor="middle" class="t">Register</text>
+    <text x="85" y="46" text-anchor="middle" class="s">register.php · FORM</text>
+  </g>
+  <g transform="translate(660,310)">
+    <rect class="box" width="180" height="54" rx="8"/><rect class="bar" width="180" height="6" rx="3"/>
+    <text x="90" y="30" text-anchor="middle" class="t">Authenticated session</text>
+    <text x="90" y="46" text-anchor="middle" class="s">$_SESSION[cust_id]</text>
+  </g>
+  <g transform="translate(660,410)">
+    <rect class="box" width="180" height="54" rx="8"/><rect class="bar" width="180" height="6" rx="3"/>
+    <text x="90" y="28" text-anchor="middle" class="t">Your Tickets</text>
+    <text x="90" y="45" text-anchor="middle" class="s">my_bookings.php · TABLE + UPDATE</text>
+  </g>
+  <g transform="translate(660,510)">
+    <rect class="box" width="180" height="44" rx="8"/><rect class="bar" width="180" height="6" rx="3"/>
+    <text x="90" y="30" text-anchor="middle" class="t">Logout (logout.php)</text>
+  </g>
+
+  <!-- flows -->
+  <path class="flow" d="M420,170 L150,210"/>            <!-- home->movies -->
+  <path class="flow" d="M450,170 L380,210"/>            <!-- home->theatres -->
+  <path class="flow" d="M520,170 L645,210"/>            <!-- home->login/register area -->
+  <path class="flow" d="M150,264 L150,310"/>            <!-- movies->details -->
+  <path class="flow" d="M150,364 L150,410"/>            <!-- details->book -->
+  <path class="flow" d="M150,464 L150,510"/>            <!-- book->confirmation -->
+  <path class="flow" d="M645,264 L740,310"/>            <!-- login->session -->
+  <path class="flow" d="M845,264 L755,310"/>            <!-- register->session -->
+  <path class="flow" d="M750,364 L750,410"/>            <!-- session->your tickets -->
+  <path class="flow" d="M750,464 L750,510"/>            <!-- your tickets->logout -->
+  <!-- gate: booking requires session -->
+  <path class="gate" d="M660,437 L240,437"/>
+  <text x="300" y="430" fill="#c0392b" font-size="11" font-weight="700">login required to book</text>
+
+  <text x="24" y="632" class="s">Solid arrow = navigation link · Red dashed = access control (booking is gated behind login, then returns the user to booking).</text>
+</svg>
