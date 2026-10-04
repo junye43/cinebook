@@ -6,8 +6,12 @@
         <div class="feature-card"><span class="fico">&#9993;</span>SUBSCRIBE TO THE NEWSLETTER</div>
     </div>
 
+    <div class="footer-main">
+
     <div class="footer-brand">
-        <a href="index.php" class="logo">Cine<span class="tk">my</span>Book</a>
+        <a href="index.php" class="footer-logo">
+            <img src="images/cinebooklogo.png" alt="CineBook Logo">
+        </a>
     </div>
 
     <nav class="footer-nav" aria-label="Footer navigation">
@@ -17,7 +21,7 @@
         <a href="about.php">Theatres</a>
     </nav>
 
-    <!-- Decorative social icons (external links are not used, per project rules) -->
+    <!-- Decorative social icons -->
     <div class="footer-socials" aria-hidden="true">
         <span class="social-ico">IG</span>
         <span class="social-ico">f</span>
@@ -25,6 +29,8 @@
         <span class="social-ico">in</span>
         <span class="social-ico">YT</span>
     </div>
+
+</div>
 
     <div class="footer-legal">
         <span>Terms &amp; Conditions &nbsp;|&nbsp; Privacy Policy</span>

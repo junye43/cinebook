@@ -33,7 +33,9 @@ function starRating($stars) {
 <body>
 <header class="site-header">
     <div class="header-inner">
-        <a href="index.php" class="logo">Cine<span class="tk">my</span>Book</a>
+        <a href="index.php" class="logo">
+            <img src="images/cinebooklogo.png" alt="CineBook Logo">
+        </a>
         <nav class="main-nav" aria-label="Main navigation">
             <ul class="nav-links">
                 <li><a href="index.php"<?php echo navActive('index.php'); ?>>Home</a></li>
