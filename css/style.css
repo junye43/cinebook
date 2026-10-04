@@ -690,6 +690,15 @@ table.data-table tbody tr:last-child td { border-bottom: none; }
     .ticket-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
+.theatres-banner {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 16px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+}
+
 /* ==========================
    HERO CAROUSEL
 ========================== */

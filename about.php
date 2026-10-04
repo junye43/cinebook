@@ -3,7 +3,9 @@ $pageTitle = "About Us";
 include 'includes/header.php';
 ?>
 
-<img class="page-banner" src="images/ui/banner.svg" alt="CineBook Cinemas — your seat at the movies awaits">
+<img class="theatres-banner"
+     src="images/ui/theatres-banner.png"
+     alt="CineBook Cinemas">
 
 <h1 class="section-title">About CineBook</h1>
 <p style="max-width:700px;">
