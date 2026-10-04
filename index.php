@@ -61,9 +61,8 @@ $coming = $conn->query(
                     ▶ View Details
                 </a>
                 
-                <a href="booking.php?movie_id=<?php echo $movie['Movie_ID']; ?>"
-                class="hero-book-ticket">
-                    <img src="images/ui/book-ticket.png" alt="Book Tickets">
+                <a href="booking.php?movie_id=<?php echo $row['Movie_ID']; ?>" class="book-now-btn">
+                    🎟 Book Now
                 </a>
             </div>
         </div>
@@ -111,8 +110,8 @@ $coming = $conn->query(
                     <div class="mc-title"><?php echo htmlspecialchars($row['Title']); ?></div>
                     <span class="mc-cert">CBFC : <?php echo htmlspecialchars($row['Certificate']); ?></span>
                 </div>
-                <a href="booking.php?movie_id=<?php echo $row['Movie_ID']; ?>" class="book-ticket-btn">
-                    <img src="images/ui/book-ticket.png" alt="Book Tickets">
+                <a href="booking.php?movie_id=<?php echo $row['Movie_ID']; ?>" class="book-now-btn">
+                    🎟 Book Now
                 </a>
             </div>
         </div>

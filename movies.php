@@ -66,8 +66,8 @@ $result = $stmt->get_result();
                 <?php if ($row['Status'] === 'coming'): ?>
                     <a href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>" class="btn btn-sm btn-ghost">Details</a>
                 <?php else: ?>
-                    <a href="booking.php?movie_id=<?php echo $row['Movie_ID']; ?>" class="book-ticket-btn">
-                        <img src="images/ui/book-ticket.png" alt="Book Tickets">
+                    <a href="booking.php?movie_id=<?php echo $row['Movie_ID']; ?>" class="book-now-btn">
+                        🎟 Book Now
                     </a>
                 <?php endif; ?>
             </div>

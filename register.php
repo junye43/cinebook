@@ -55,7 +55,7 @@ include 'includes/header.php';
 ?>
 
 <div class="form-panel">
-    <img class="page-banner" src="images/ui/banner.svg" alt="CineBook Cinemas">
+    <img class="auth-banner" src="images/ui/theatres-banner.png" alt="CineBook Cinemas">
     <h2>Create an Account</h2>
     <p class="form-sub">Join CineBook to book faster and track your reservations.</p>
 
