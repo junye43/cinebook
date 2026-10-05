@@ -59,10 +59,11 @@ $result = $stmt->get_result();
                 <span class="dur-pill">&#9201; <?php echo formatDuration($row['Duration_Min']); ?></span>
             </a>
             <div class="movie-card-foot">
-                <div>
-                    <div class="mc-title"><?php echo htmlspecialchars($row['Title']); ?></div>
-                    <span class="mc-cert"><?php echo htmlspecialchars($row['Cinema_Name']); ?> &middot; <?php echo date("d M", strtotime($row['Date'])); ?></span>
+                <div class="mc-head">
+                    <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
+                    <?php echo cert_badge($row['Certificate']); ?>
                 </div>
+                <div class="mc-location"><?php echo htmlspecialchars($row['Cinema_Name']); ?> &middot; <?php echo date("d M", strtotime($row['Date'])); ?></div>
                 <?php if ($row['Status'] === 'coming'): ?>
                     <a href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>" class="btn btn-sm btn-ghost">Details</a>
                 <?php else: ?>

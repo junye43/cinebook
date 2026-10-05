@@ -88,3 +88,11 @@ function backdrop_style($file)
     }
     return '';
 }
+
+/* Coloured film-certificate badge (G / PG / PG13 / NC16 / M18 / R21). */
+function cert_badge($cert) {
+    $cert = trim((string) $cert);
+    if ($cert === '') return '';
+    $cls = preg_replace('/[^A-Z0-9]/', '', strtoupper($cert));
+    return '<span class="cert-badge cert-' . $cls . '">' . htmlspecialchars($cert) . '</span>';
+}

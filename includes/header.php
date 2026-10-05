@@ -44,10 +44,10 @@ function starRating($stars) {
                 <li><a href="about.php"<?php echo navActive('about.php'); ?>>Theatres</a></li>
                 <?php if (isset($_SESSION['cust_id'])): ?>
                     <li><a href="my_bookings.php"<?php echo navActive('my_bookings.php'); ?>>Your Tickets</a></li>
+                    <li><a href="profile.php"<?php echo navActive('profile.php'); ?>>My Profile</a></li>
                     <li><a href="logout.php">Logout</a></li>
                 <?php else: ?>
                     <li><a href="login.php"<?php echo navActive('login.php'); ?>>Login</a></li>
-                    <li><a href="register.php"<?php echo navActive('register.php'); ?>>Register</a></li>
                 <?php endif; ?>
             </ul>
         </nav>

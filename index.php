@@ -61,7 +61,7 @@ $coming = $conn->query(
                     ▶ View Details
                 </a>
                 
-                <a href="booking.php?movie_id=<?php echo $row['Movie_ID']; ?>" class="book-now-btn">
+                <a href="booking.php?movie_id=<?php echo $movie['Movie_ID']; ?>" class="book-now-btn">
                     🎟 Book Now
                 </a>
             </div>
@@ -70,15 +70,6 @@ $coming = $conn->query(
 </div>
 
 <?php endforeach; ?>
-
-
-<button class="hero-prev">
-❮
-</button>
-
-<button class="hero-next">
-❯
-</button>
 
 <div class="hero-dots">
 
@@ -106,10 +97,11 @@ $coming = $conn->query(
                 <span class="dur-pill">&#9201; <?php echo formatDuration($row['Duration_Min']); ?></span>
             </a>
             <div class="movie-card-foot">
-                <div>
-                    <div class="mc-title"><?php echo htmlspecialchars($row['Title']); ?></div>
-                    <span class="mc-cert">CBFC : <?php echo htmlspecialchars($row['Certificate']); ?></span>
+                <div class="mc-head">
+                    <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
+                    <?php echo cert_badge($row['Certificate']); ?>
                 </div>
+                <div class="mc-location"><?php echo htmlspecialchars($row['Cinema_Name']); ?></div>
                 <a href="booking.php?movie_id=<?php echo $row['Movie_ID']; ?>" class="book-now-btn">
                     🎟 Book Now
                 </a>
@@ -135,10 +127,11 @@ $coming = $conn->query(
                 <span class="dur-pill">&#9201; <?php echo formatDuration($row['Duration_Min']); ?></span>
             </a>
             <div class="movie-card-foot">
-                <div>
-                    <div class="mc-title"><?php echo htmlspecialchars($row['Title']); ?></div>
-                    <span class="mc-cert">Opens <?php echo date("d M", strtotime($row['Date'])); ?></span>
+                <div class="mc-head">
+                    <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
+                    <?php echo cert_badge($row['Certificate']); ?>
                 </div>
+                <div class="mc-location"><?php echo htmlspecialchars($row['Cinema_Name']); ?> &middot; Opens <?php echo date("d M", strtotime($row['Date'])); ?></div>
                 <a href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>" class="btn btn-sm btn-ghost">Details</a>
             </div>
         </div>

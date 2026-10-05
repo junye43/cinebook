@@ -2,12 +2,10 @@
 $pageTitle = "Login";
 require_once 'includes/db_connect.php';
 
-$errors = [];
-// Where to send the user after a successful login (validated to a local page).
 $redirect = safe_local_redirect($_POST['redirect'] ?? $_GET['redirect'] ?? '', 'index.php');
-
-// Already logged in? Go straight there.
 if (is_logged_in()) { header("Location: $redirect"); exit; }
+
+$errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify()) $errors[] = "Your session expired. Please try again.";
@@ -22,21 +20,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = $stmt->get_result();
 
         if ($result->num_rows === 1) {
-            $user = $result->fetch_assoc();
-            if (password_verify($password, $user['Password'])) {
-                session_regenerate_id(true);              // prevent session fixation
-                $_SESSION['cust_id'] = $user['Cust_ID'];
-                $_SESSION['cust_name'] = $user['Cust_Name'];
+            $u = $result->fetch_assoc();
+            if (password_verify($password, $u['Password'])) {
+                session_regenerate_id(true);
+                $_SESSION['cust_id'] = $u['Cust_ID'];
+                $_SESSION['cust_name'] = $u['Cust_Name'];
                 header("Location: $redirect");
                 exit;
             }
         }
-        // Same message whether the email or password is wrong (no user enumeration)
         $errors[] = "Incorrect email or password.";
     }
 }
 
 include 'includes/header.php';
+$regLink = 'register.php' . (isset($_GET['redirect']) ? '?redirect=' . urlencode($redirect) : '');
 ?>
 
 <div class="form-panel">
@@ -44,14 +42,11 @@ include 'includes/header.php';
     <h2>Welcome back</h2>
     <p class="form-sub">Log in to book tickets and manage your reservations.</p>
 
-    <?php if (!empty($errors)): ?>
-        <div class="error-msg">
-            <?php foreach ($errors as $e) echo "<p>" . htmlspecialchars($e) . "</p>"; ?>
-        </div>
-    <?php endif; ?>
-
     <?php if (isset($_GET['redirect']) && $_SERVER['REQUEST_METHOD'] !== 'POST'): ?>
-        <div class="success-msg">Please log in to continue to your booking.</div>
+        <div class="success-msg">Please log in to continue.</div>
+    <?php endif; ?>
+    <?php if (!empty($errors)): ?>
+        <div class="error-msg"><?php foreach ($errors as $e) echo "<p>".htmlspecialchars($e)."</p>"; ?></div>
     <?php endif; ?>
 
     <form method="POST" action="login.php" id="loginForm">
@@ -59,8 +54,7 @@ include 'includes/header.php';
         <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect); ?>">
         <div class="form-group">
             <label for="email">Email</label>
-            <input type="email" id="email" name="email" required
-                   value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
+            <input type="email" id="email" name="email" required value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
         </div>
         <div class="form-group">
             <label for="password">Password</label>
@@ -68,16 +62,14 @@ include 'includes/header.php';
         </div>
         <button type="submit" class="btn btn-block">Login</button>
     </form>
-    <p class="form-footer-note">No account yet?
-        <a href="register.php<?php echo isset($_GET['redirect']) ? '?redirect=' . urlencode($redirect) : ''; ?>">Register here</a>.
-    </p>
+
+    <p class="form-footer-note">Not a member yet? <a href="<?php echo htmlspecialchars($regLink); ?>">Register now</a>.</p>
 </div>
 
 <script>
 document.getElementById('loginForm').addEventListener('submit', function (e) {
     var email = document.getElementById('email').value.trim();
-    var pw = document.getElementById('password').value;
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || pw.length < 1) {
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || document.getElementById('password').value.length < 1) {
         alert('Please enter a valid email and your password.');
         e.preventDefault();
     }

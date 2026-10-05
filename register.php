@@ -2,10 +2,10 @@
 $pageTitle = "Register";
 require_once 'includes/db_connect.php';
 
-$errors = [];
 $redirect = safe_local_redirect($_POST['redirect'] ?? $_GET['redirect'] ?? '', 'index.php');
-
 if (is_logged_in()) { header("Location: $redirect"); exit; }
+
+$errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify()) $errors[] = "Your session expired. Please try again.";
@@ -19,7 +19,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $confirm  = $_POST['confirm_password'] ?? '';
 
-    // ---- Server-side validation ----
     if (!preg_match("/^[A-Za-z][A-Za-z '\-]{1,49}$/", $fname)) $errors[] = "Please enter a valid first name.";
     if (!preg_match("/^[A-Za-z][A-Za-z '\-]{1,49}$/", $lname)) $errors[] = "Please enter a valid last name.";
     if ($age < 12 || $age > 120) $errors[] = "Age must be between 12 and 120.";
@@ -41,7 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("ssissss", $fname, $lname, $age, $address, $number, $email, $hashed);
             $stmt->execute();
 
-            // Auto-login the new customer, then continue to their destination.
             session_regenerate_id(true);
             $_SESSION['cust_id'] = $conn->insert_id;
             $_SESSION['cust_name'] = $fname;
@@ -52,17 +50,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 include 'includes/header.php';
+$loginLink = 'login.php' . (isset($_GET['redirect']) ? '?redirect=' . urlencode($redirect) : '');
 ?>
 
 <div class="form-panel">
     <img class="auth-banner" src="images/ui/theatres-banner.png" alt="CineBook Cinemas">
-    <h2>Create an Account</h2>
+    <h2>Create an account</h2>
     <p class="form-sub">Join CineBook to book faster and track your reservations.</p>
 
     <?php if (!empty($errors)): ?>
         <div class="error-msg">
             <ul style="margin-left:18px;">
-                <?php foreach ($errors as $e) echo "<li>" . htmlspecialchars($e) . "</li>"; ?>
+                <?php foreach ($errors as $e) echo "<li>".htmlspecialchars($e)."</li>"; ?>
             </ul>
         </div>
     <?php endif; ?>
@@ -111,9 +110,8 @@ include 'includes/header.php';
         </div>
         <button type="submit" class="btn btn-block">Register</button>
     </form>
-    <p class="form-footer-note">Already have an account?
-        <a href="login.php<?php echo isset($_GET['redirect']) ? '?redirect=' . urlencode($redirect) : ''; ?>">Log in</a>.
-    </p>
+
+    <p class="form-footer-note">Already a member? <a href="<?php echo htmlspecialchars($loginLink); ?>">Log in</a>.</p>
 </div>
 
 <script>
@@ -125,8 +123,7 @@ document.getElementById('registerForm').addEventListener('submit', function (e) 
     var age = parseInt(document.getElementById('age').value, 10);
     if (isNaN(age) || age < 12 || age > 120) msg += "Age must be between 12 and 120.\n";
     if (!/^[0-9]{7,15}$/.test(document.getElementById('number').value)) msg += "Contact number must be 7-15 digits.\n";
-    var email = document.getElementById('email').value.trim();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) msg += "Enter a valid email.\n";
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(document.getElementById('email').value.trim())) msg += "Enter a valid email.\n";
     var pw = document.getElementById('password').value;
     if (pw.length < 6) msg += "Password must be at least 6 characters.\n";
     if (pw !== document.getElementById('confirm_password').value) msg += "Passwords do not match.\n";
