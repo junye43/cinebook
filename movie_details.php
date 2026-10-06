@@ -28,12 +28,11 @@ $stmt2->execute();
 $showtimes = $stmt2->get_result();
 ?>
 
-<div class="detail-banner<?php echo poster_has_img($movie['Poster']); ?>" data-genre="<?php echo htmlspecialchars($movie['Genre']); ?>"<?php echo poster_style($movie['Poster']); ?>>
-    <?php if (poster_file($movie['Poster']) === ''): ?>
-        <span class="poster-title serif" style="font-size:2em;position:relative;z-index:2;">
-            <?php echo htmlspecialchars($movie['Title']); ?>
-        </span>
-    <?php endif; ?>
+<div class="detail-banner">
+    <img
+        src="images/backdrops/<?php echo htmlspecialchars($movie['Backdrop']); ?>"
+        alt="<?php echo htmlspecialchars($movie['Title']); ?>"
+        class="detail-banner-img">
 </div>
 
 <div class="stars-inline"><?php echo starRating($movie['Stars']); ?></div>
