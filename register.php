@@ -12,7 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $fname    = trim($_POST['fname'] ?? '');
     $lname    = trim($_POST['lname'] ?? '');
-    $age      = intval($_POST['age'] ?? 0);
+    $dob      = trim($_POST['dob'] ?? '');
+    $age      = age_from_dob($dob);
     $address  = trim($_POST['address'] ?? '');
     $number   = trim($_POST['number'] ?? '');
     $email    = trim($_POST['email'] ?? '');
@@ -21,7 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!preg_match("/^[A-Za-z][A-Za-z '\-]{1,49}$/", $fname)) $errors[] = "Please enter a valid first name.";
     if (!preg_match("/^[A-Za-z][A-Za-z '\-]{1,49}$/", $lname)) $errors[] = "Please enter a valid last name.";
-    if ($age < 12 || $age > 120) $errors[] = "Age must be between 12 and 120.";
+    if ($age === null) $errors[] = "Please enter a valid date of birth.";
+    elseif ($age < 12 || $age > 120) $errors[] = "You must be between 12 and 120 years old.";
     if (!preg_match('/^[0-9]{7,15}$/', $number)) $errors[] = "Contact number must be 7-15 digits.";
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = "A valid email is required.";
     if (strlen($password) < 6) $errors[] = "Password must be at least 6 characters.";
@@ -35,9 +37,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = "An account with this email already exists.";
         } else {
             $hashed = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("INSERT INTO customer (Cust_Name, Cust_Lname, Cust_Age, Cust_Address, Cust_Number, Email, Password)
-                                     VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssissss", $fname, $lname, $age, $address, $number, $email, $hashed);
+            $stmt = $conn->prepare("INSERT INTO customer (Cust_Name, Cust_Lname, Cust_Age, Cust_DOB, Cust_Address, Cust_Number, Email, Password)
+                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssisssss", $fname, $lname, $age, $dob, $address, $number, $email, $hashed);
             $stmt->execute();
 
             session_regenerate_id(true);
@@ -81,8 +83,8 @@ $loginLink = 'login.php' . (isset($_GET['redirect']) ? '?redirect=' . urlencode(
         </div>
         <div class="form-row">
             <div class="form-group">
-                <label for="age">Age</label>
-                <input type="number" id="age" name="age" min="12" max="120" required value="<?php echo htmlspecialchars($_POST['age'] ?? ''); ?>">
+                <label for="dob">Date of Birth</label>
+                <input type="date" id="dob" name="dob" max="<?php echo date('Y-m-d'); ?>" required value="<?php echo htmlspecialchars($_POST['dob'] ?? ''); ?>">
             </div>
             <div class="form-group">
                 <label for="number">Contact Number</label>
@@ -120,14 +122,18 @@ document.getElementById('registerForm').addEventListener('submit', function (e) 
     var name = /^[A-Za-z][A-Za-z '\-]{1,49}$/;
     if (!name.test(document.getElementById('fname').value.trim())) msg += "Enter a valid first name.\n";
     if (!name.test(document.getElementById('lname').value.trim())) msg += "Enter a valid last name.\n";
-    var age = parseInt(document.getElementById('age').value, 10);
-    if (isNaN(age) || age < 12 || age > 120) msg += "Age must be between 12 and 120.\n";
+    var dob = document.getElementById('dob').value;
+    if (!dob) { msg += "Please enter your date of birth.\n"; }
+    else {
+        var age = Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000);
+        if (age < 12 || age > 120) msg += "You must be between 12 and 120 years old.\n";
+    }
     if (!/^[0-9]{7,15}$/.test(document.getElementById('number').value)) msg += "Contact number must be 7-15 digits.\n";
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(document.getElementById('email').value.trim())) msg += "Enter a valid email.\n";
     var pw = document.getElementById('password').value;
     if (pw.length < 6) msg += "Password must be at least 6 characters.\n";
     if (pw !== document.getElementById('confirm_password').value) msg += "Passwords do not match.\n";
-    if (msg !== "") { alert(msg); e.preventDefault(); }
+    if (msg !== "") { showErrorBox(msg); e.preventDefault(); }
 });
 </script>
 

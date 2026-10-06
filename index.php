@@ -9,6 +9,7 @@ $showing = $conn->query(
             m.Description, m.Certificate, m.Stars, m.Poster, m.Backdrop, c.Cinema_Name
      FROM movie m LEFT JOIN cinema c ON m.Cinema_ID = c.Cinema_ID
      WHERE m.Status = 'showing'
+       AND m.Movie_ID IN (SELECT MIN(Movie_ID) FROM movie WHERE Status='showing' GROUP BY Title)
      ORDER BY m.Stars DESC, m.Date ASC"
 );
 $showingRows = $showing ? $showing->fetch_all(MYSQLI_ASSOC) : [];
@@ -20,6 +21,7 @@ $coming = $conn->query(
             m.Description, m.Certificate, m.Stars, m.Poster, m.Backdrop, c.Cinema_Name
      FROM movie m LEFT JOIN cinema c ON m.Cinema_ID = c.Cinema_ID
      WHERE m.Status = 'coming'
+       AND m.Movie_ID IN (SELECT MIN(Movie_ID) FROM movie WHERE Status='coming' GROUP BY Title)
      ORDER BY m.Date ASC"
 );
 ?>
@@ -93,14 +95,11 @@ $coming = $conn->query(
         <div class="movie-card">
             <a class="poster<?php echo poster_has_img($row['Poster']); ?>" data-genre="<?php echo htmlspecialchars($row['Genre']); ?>"<?php echo poster_style($row['Poster']); ?>
                href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>">
-                <span class="star-pill"><?php echo starRating($row['Stars']); ?></span>
+                <?php echo cert_badge($row['Certificate']); ?>
                 <span class="dur-pill">&#9201; <?php echo formatDuration($row['Duration_Min']); ?></span>
             </a>
             <div class="movie-card-foot">
-                <div class="mc-head">
-                    <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
-                    <?php echo cert_badge($row['Certificate']); ?>
-                </div>
+                <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
                 <div class="mc-location"><?php echo htmlspecialchars($row['Cinema_Name']); ?></div>
                 <a href="booking.php?movie_id=<?php echo $row['Movie_ID']; ?>" class="book-now-btn">
                     🎟 Book Now
@@ -123,14 +122,11 @@ $coming = $conn->query(
         <div class="movie-card">
             <a class="poster<?php echo poster_has_img($row['Poster']); ?>" data-genre="<?php echo htmlspecialchars($row['Genre']); ?>"<?php echo poster_style($row['Poster']); ?>
                href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>">
-                <span class="star-pill"><?php echo starRating($row['Stars']); ?></span>
+                <?php echo cert_badge($row['Certificate']); ?>
                 <span class="dur-pill">&#9201; <?php echo formatDuration($row['Duration_Min']); ?></span>
             </a>
             <div class="movie-card-foot">
-                <div class="mc-head">
-                    <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
-                    <?php echo cert_badge($row['Certificate']); ?>
-                </div>
+                <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
                 <div class="mc-location"><?php echo htmlspecialchars($row['Cinema_Name']); ?> &middot; Opens <?php echo date("d M", strtotime($row['Date'])); ?></div>
                 <a href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>" class="btn btn-sm btn-ghost">Details</a>
             </div>

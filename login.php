@@ -70,7 +70,7 @@ $regLink = 'register.php' . (isset($_GET['redirect']) ? '?redirect=' . urlencode
 document.getElementById('loginForm').addEventListener('submit', function (e) {
     var email = document.getElementById('email').value.trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || document.getElementById('password').value.length < 1) {
-        alert('Please enter a valid email and your password.');
+        showErrorBox('Please enter a valid email and your password.');
         e.preventDefault();
     }
 });

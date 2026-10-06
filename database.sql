@@ -87,6 +87,7 @@ CREATE TABLE customer (
     Cust_Name VARCHAR(80) NOT NULL,
     Cust_Lname VARCHAR(80) NOT NULL,
     Cust_Age INT,
+    Cust_DOB DATE,
     Cust_Address VARCHAR(255),
     Cust_Number VARCHAR(20),
     Email VARCHAR(120) UNIQUE NOT NULL,
@@ -165,6 +166,14 @@ INSERT INTO movie (Location, Date, Showtime, Description, Title, Poster, Backdro
 ('Hall 2', '2026-10-18', '21:00:00', 'When the city sleeps, one detective uncovers a conspiracy that reaches the highest towers.',              'Neon Alibi',     'neonalibi.png',    '', 'Action', 118, 'NC16', 4, 'coming', 2),
 ('Hall 3', '2026-11-01', '17:30:00', 'A tiny hero with a big heart proves that size is never a limit when courage leads the way.',              'Pocket Dynamo',  'pocketdynamo.png', '', 'Comedy', 101, 'PG',   3, 'coming', 1),
 ('Hall 4', '2026-11-14', '19:45:00', 'Two rivals, one prize, and a race across the stars that will decide the fate of a galaxy.',              'Orbit Run',      'orbitrun.png',     '', 'Sci-Fi', 126, 'PG13', 5, 'coming', 2);
+
+-- Extra showtimes for each Now-Showing film (same film, more times)
+INSERT INTO movie (Location, Date, Showtime, Description, Title, Poster, Backdrop, Genre, Duration_Min, Certificate, Stars, Status, Cinema_ID)
+SELECT base.Location, base.Date, t.Showtime, base.Description, base.Title, base.Poster, base.Backdrop,
+       base.Genre, base.Duration_Min, base.Certificate, base.Stars, base.Status, base.Cinema_ID
+FROM movie base
+CROSS JOIN (SELECT '10:05:00' AS Showtime UNION SELECT '13:30:00' UNION SELECT '16:45:00' UNION SELECT '20:00:00') t
+WHERE base.Status = 'showing';
 
 INSERT INTO payment_type (Payment_Type) VALUES
 ('Credit Card'), ('Debit Card'), ('PayNow');

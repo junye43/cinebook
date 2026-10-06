@@ -9,7 +9,7 @@ $errors = [];
 $success = "";
 
 // ---- Load the current customer record ----
-$stmt = $conn->prepare("SELECT Cust_Name, Cust_Lname, Cust_Age, Cust_Address, Cust_Number, Email
+$stmt = $conn->prepare("SELECT Cust_Name, Cust_Lname, Cust_Age, Cust_DOB, Cust_Address, Cust_Number, Email
                         FROM customer WHERE Cust_ID = ?");
 $stmt->bind_param("i", $custId);
 $stmt->execute();
@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $fname   = trim($_POST['fname'] ?? '');
     $lname   = trim($_POST['lname'] ?? '');
-    $age     = intval($_POST['age'] ?? 0);
+    // Date of birth is fixed at registration and cannot be changed here.
     $address = trim($_POST['address'] ?? '');
     $number  = trim($_POST['number'] ?? '');
     $email   = trim($_POST['email'] ?? '');
@@ -36,7 +36,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ---- Validation ----
     if (!preg_match("/^[A-Za-z][A-Za-z '\-]{1,49}$/", $fname)) $errors[] = "Please enter a valid first name.";
     if (!preg_match("/^[A-Za-z][A-Za-z '\-]{1,49}$/", $lname)) $errors[] = "Please enter a valid last name.";
-    if ($age < 12 || $age > 120) $errors[] = "Age must be between 12 and 120.";
     if (!preg_match('/^[0-9]{7,15}$/', $number)) $errors[] = "Contact number must be 7-15 digits.";
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = "A valid email is required.";
 
@@ -58,23 +57,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($changePassword) {
             $hashed = password_hash($newPass, PASSWORD_DEFAULT);
             $stmt = $conn->prepare("UPDATE customer
-                SET Cust_Name=?, Cust_Lname=?, Cust_Age=?, Cust_Address=?, Cust_Number=?, Email=?, Password=?
+                SET Cust_Name=?, Cust_Lname=?, Cust_Address=?, Cust_Number=?, Email=?, Password=?
                 WHERE Cust_ID=?");
-            $stmt->bind_param("ssissssi", $fname, $lname, $age, $address, $number, $email, $hashed, $custId);
+            $stmt->bind_param("ssssssi", $fname, $lname, $address, $number, $email, $hashed, $custId);
         } else {
             $stmt = $conn->prepare("UPDATE customer
-                SET Cust_Name=?, Cust_Lname=?, Cust_Age=?, Cust_Address=?, Cust_Number=?, Email=?
+                SET Cust_Name=?, Cust_Lname=?, Cust_Address=?, Cust_Number=?, Email=?
                 WHERE Cust_ID=?");
-            $stmt->bind_param("ssisssi", $fname, $lname, $age, $address, $number, $email, $custId);
+            $stmt->bind_param("sssssi", $fname, $lname, $address, $number, $email, $custId);
         }
         $stmt->execute();
 
         $_SESSION['cust_name'] = $fname;
         $success = "Your profile has been updated." . ($changePassword ? " Password changed." : "");
 
-        // refresh displayed values
-        $user = ['Cust_Name'=>$fname, 'Cust_Lname'=>$lname, 'Cust_Age'=>$age,
-                 'Cust_Address'=>$address, 'Cust_Number'=>$number, 'Email'=>$email];
+        // refresh displayed values (DOB is unchanged)
+        $user['Cust_Name'] = $fname; $user['Cust_Lname'] = $lname;
+        $user['Cust_Address'] = $address; $user['Cust_Number'] = $number; $user['Email'] = $email;
     }
 }
 
@@ -116,8 +115,9 @@ function pv($postKey, $stored) {
         </div>
         <div class="form-row">
             <div class="form-group">
-                <label for="age">Age</label>
-                <input type="number" id="age" name="age" min="12" max="120" required value="<?php echo pv('age', $user['Cust_Age']); ?>">
+                <label for="dob">Date of Birth</label>
+                <input type="date" id="dob" value="<?php echo htmlspecialchars($user['Cust_DOB']); ?>" disabled>
+                <div class="hint">Your date of birth cannot be changed.</div>
             </div>
             <div class="form-group">
                 <label for="number">Contact Number</label>
@@ -157,8 +157,6 @@ document.getElementById('profileForm').addEventListener('submit', function (e) {
     var name = /^[A-Za-z][A-Za-z '\-]{1,49}$/;
     if (!name.test(document.getElementById('fname').value.trim())) msg += "Enter a valid first name.\n";
     if (!name.test(document.getElementById('lname').value.trim())) msg += "Enter a valid last name.\n";
-    var age = parseInt(document.getElementById('age').value, 10);
-    if (isNaN(age) || age < 12 || age > 120) msg += "Age must be between 12 and 120.\n";
     if (!/^[0-9]{7,15}$/.test(document.getElementById('number').value)) msg += "Contact number must be 7-15 digits.\n";
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(document.getElementById('email').value.trim())) msg += "Enter a valid email.\n";
     var np = document.getElementById('new_password').value;
@@ -167,7 +165,7 @@ document.getElementById('profileForm').addEventListener('submit', function (e) {
         if (np.length < 6) msg += "New password must be at least 6 characters.\n";
         if (np !== cp) msg += "New passwords do not match.\n";
     }
-    if (msg !== "") { alert(msg); e.preventDefault(); }
+    if (msg !== "") { showErrorBox(msg); e.preventDefault(); }
 });
 </script>
 

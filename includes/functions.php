@@ -89,6 +89,24 @@ function backdrop_style($file)
     return '';
 }
 
+/* Age in whole years from a date of birth (Y-m-d), or null if invalid/future. */
+function age_from_dob($dob) {
+    $dob = trim((string) $dob);
+    if ($dob === '') return null;
+    $d = DateTime::createFromFormat('Y-m-d', $dob);
+    if (!$d || $d->format('Y-m-d') !== $dob) return null;
+    $today = new DateTime('today');
+    if ($d > $today) return null;
+    return (int) $d->diff($today)->y;
+}
+
+/* Minimum age required for a film certificate (0 = no age restriction). */
+function cert_min_age($cert) {
+    $map = ['PG13' => 13, 'NC16' => 16, 'M18' => 18, 'R21' => 21];
+    $k = preg_replace('/[^A-Z0-9]/', '', strtoupper((string) $cert));
+    return $map[$k] ?? 0;
+}
+
 /* Coloured film-certificate badge (G / PG / PG13 / NC16 / M18 / R21). */
 function cert_badge($cert) {
     $cert = trim((string) $cert);

@@ -38,7 +38,9 @@ $showtimes = $stmt2->get_result();
 
 <div class="stars-inline"><?php echo starRating($movie['Stars']); ?></div>
 <h1 class="detail-title"><?php echo htmlspecialchars($movie['Title']); ?></h1>
-<p style="color:var(--gold);font-size:0.9em;">Showing from <?php echo date("d M Y", strtotime($movie['Date'])); ?></p>
+<p style="color:var(--gold);font-size:0.9em;">
+    <?php echo $movie['Status'] === 'coming' ? 'Opens on ' : 'Showing from '; ?><?php echo date("d M Y", strtotime($movie['Date'])); ?>
+</p>
 
 <div class="detail-meta">
     <span class="pill">CBFC : <?php echo htmlspecialchars($movie['Certificate']); ?></span>
@@ -57,6 +59,13 @@ $showtimes = $stmt2->get_result();
             <strong>Contact:</strong> <?php echo htmlspecialchars($movie['Cinema_Cont']); ?>
         </p>
 
+<?php if ($movie['Status'] === 'coming'): ?>
+        <h3 style="margin-top:22px;font-size:1.15em;">Coming Soon</h3>
+        <p class="detail-facts">This film opens on <strong><?php echo date("d M Y", strtotime($movie['Date'])); ?></strong>. Showtimes aren't open for booking yet — check back closer to the release date.</p>
+        <p style="margin-top:22px;">
+            <a href="movies.php" class="btn btn-ghost">Browse Now Showing</a>
+        </p>
+<?php else: ?>
         <h3 style="margin-top:22px;font-size:1.15em;">Available Showtimes</h3>
         <div class="showtime-list">
             <?php while ($s = $showtimes->fetch_assoc()): ?>
@@ -69,6 +78,7 @@ $showtimes = $stmt2->get_result();
         <p style="margin-top:26px;">
             <a href="booking.php?movie_id=<?php echo $movie['Movie_ID']; ?>" class="btn">&#127903; Book Tickets</a>
         </p>
+<?php endif; ?>
     </div>
 
     <div>

@@ -399,6 +399,15 @@ a.mc-title:hover { color: var(--gold); }
     color: #fff;
     background: #555;        /* fallback */
 }
+/* Certificate badge sitting on the poster (top-right, where the rating was) */
+.poster .cert-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    margin: 0;
+    z-index: 3;
+    font-size: 0.68em;
+}
 .cert-G    { background: #2e7d32; }
 .cert-PG   { background: #7cb342; }
 .cert-PG13 { background: #43a047; }
@@ -642,6 +651,10 @@ table.data-table tbody tr:last-child td { border-bottom: none; }
 .form-panel .page-banner { margin-bottom: 22px; }
 
 /* Poster thumbnail (e.g. in tables / tickets) */
+.clickable-row { cursor: pointer; }
+.booking-link { color: var(--text); font-weight: 600; transition: color var(--transition); }
+.booking-link:hover { color: var(--gold); }
+
 .poster-thumb {
     width: 46px; height: 66px;
     object-fit: cover;
@@ -657,6 +670,35 @@ table.data-table tbody tr:last-child td { border-bottom: none; }
     margin: 0 0 10px 18px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.35);
 }
+
+/* ---------- Custom error modal (replaces browser alert) ---------- */
+.modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.65);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: modalFade 0.15s ease;
+}
+@keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
+.modal-box {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-top: 4px solid var(--danger);
+    border-radius: 14px;
+    padding: 24px 26px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+}
+.modal-box h3 {
+    color: var(--danger);
+    font-size: 1.2em;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+}
+.modal-box ul { margin: 0 0 20px 20px; color: var(--text-mid); font-size: 0.95em; }
+.modal-box ul li { margin-bottom: 5px; }
+.modal-box .modal-ok { min-width: 110px; display: block; margin-left: auto; }
 
 /* ---------- Empty state ---------- */
 .empty-state { text-align: center; padding: 50px 20px; color: var(--muted); background: var(--bg-2); border: 1px dashed var(--border-2); border-radius: var(--radius); }
@@ -692,8 +734,11 @@ table.data-table tbody tr:last-child td { border-bottom: none; }
     width: 38px; height: 38px; border-radius: 50%;
     background: var(--bg-3); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    color: var(--muted); font-size: 0.9em;
+    color: var(--muted);
+    transition: color var(--transition), border-color var(--transition);
 }
+.social-ico svg { width: 18px; height: 18px; display: block; }
+.social-ico:hover { color: var(--gold); border-color: var(--gold); }
 .footer-legal {
     border-top: 1px solid var(--border);
     display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;

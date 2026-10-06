@@ -11,20 +11,23 @@ require_login($returnTo);
 $custId = current_user_id();
 
 // ---- Prefill the form from the logged-in customer ----
-$stmt = $conn->prepare("SELECT Cust_Name, Cust_Lname, Email, Cust_Number FROM customer WHERE Cust_ID = ?");
+$stmt = $conn->prepare("SELECT Cust_Name, Cust_Lname, Cust_Age, Cust_DOB, Email, Cust_Number FROM customer WHERE Cust_ID = ?");
 $stmt->bind_param("i", $custId);
 $stmt->execute();
 $me = $stmt->get_result()->fetch_assoc() ?: [];
 $prefillName    = trim(($me['Cust_Name'] ?? '') . ' ' . ($me['Cust_Lname'] ?? ''));
 $prefillEmail   = $me['Email'] ?? '';
 $prefillContact = $me['Cust_Number'] ?? '';
+$myAge          = age_from_dob($me['Cust_DOB'] ?? '');     // derive from DOB
+if ($myAge === null) $myAge = (int) ($me['Cust_Age'] ?? 0); // fallback for legacy rows
 
-$movies = $conn->query("SELECT Movie_ID, Title, Date, Showtime FROM movie WHERE Status = 'showing' ORDER BY Date, Showtime");
+$moviesRes  = $conn->query("SELECT Movie_ID, Title, Date, Showtime, Certificate FROM movie WHERE Status = 'showing' ORDER BY Date, Showtime");
+$moviesRows = $moviesRes ? $moviesRes->fetch_all(MYSQLI_ASSOC) : [];
 
-// Preselected movie (for the page banner image)
+// Preselected movie (for the page banner image + age check)
 $bookMovie = null;
 if ($preselectMovie) {
-    $st = $conn->prepare("SELECT Title, Genre, Poster, Backdrop FROM movie WHERE Movie_ID = ?");
+    $st = $conn->prepare("SELECT Title, Genre, Poster, Backdrop, Certificate FROM movie WHERE Movie_ID = ?");
     $st->bind_param("i", $preselectMovie);
     $st->execute();
     $bookMovie = $st->get_result()->fetch_assoc();
@@ -72,14 +75,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         // Fetch movie showtime details for the reservation record
-        $stmt = $conn->prepare("SELECT Title, Date, Showtime FROM movie WHERE Movie_ID = ?");
+        $stmt = $conn->prepare("SELECT Title, Date, Showtime, Certificate, Status FROM movie WHERE Movie_ID = ?");
         $stmt->bind_param("i", $movieId);
         $stmt->execute();
         $movieRow = $stmt->get_result()->fetch_assoc();
 
+        // ---- Coming-soon films are not open for booking ----
+        if ($movieRow && $movieRow['Status'] !== 'showing') {
+            $errors[] = "This film is not open for booking yet.";
+        }
+
+        // ---- Age-restriction check (certificate vs account age) ----
+        $minAge = $movieRow ? cert_min_age($movieRow['Certificate']) : 0;
+        if ($movieRow && $myAge < $minAge) {
+            $errors[] = "This film is rated {$movieRow['Certificate']} — you must be at least {$minAge} to book it (your account age is {$myAge}).";
+        }
+
         if (!$movieRow) {
             $errors[] = "Selected movie could not be found.";
-        } else {
+        } elseif (empty($errors)) {
             // Booking is tied to the logged-in customer ($custId).
 
             // ---- Insert reservation ----
@@ -106,6 +120,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Group showtimes by film for the two-step movie → time pickers
+$byTitle = [];
+foreach ($moviesRows as $m) { $byTitle[$m['Title']][] = $m; }
+
+// Which showtime is pre-selected (from ?movie_id, or a failed POST)
+$selectedId = $preselectMovie;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['movie_id'])) {
+    $selectedId = intval($_POST['movie_id']);
+}
+$preselectTitle = '';
+foreach ($moviesRows as $m) {
+    if ($m['Movie_ID'] == $selectedId) { $preselectTitle = $m['Title']; break; }
+}
+
 include 'includes/header.php';
 ?>
 
@@ -115,7 +143,7 @@ include 'includes/header.php';
         <span class="poster-title serif" style="font-size:1.7em;position:relative;z-index:2;">Now Booking &middot; <?php echo htmlspecialchars($bookMovie['Title']); ?></span>
     </div>
 <?php else: ?>
-    <img class="page-banner" src="images/ui/banner.svg" alt="CineBook Cinemas — Book Tickets">
+    <img class="page-banner" src="images/ui/theatres-banner.png" alt="CineBook Cinemas - Book Tickets">
 <?php endif; ?>
 
 <h1 class="detail-title" style="font-size:1.9em;margin-bottom:4px;">Book Your Tickets</h1>
@@ -127,6 +155,10 @@ include 'includes/header.php';
             <?php foreach ($errors as $e) echo "<li>" . htmlspecialchars($e) . "</li>"; ?>
         </ul>
     </div>
+<?php endif; ?>
+
+<?php if ($bookMovie && $myAge < cert_min_age($bookMovie['Certificate'])): ?>
+    <div class="error-msg">This film is rated <strong><?php echo htmlspecialchars($bookMovie['Certificate']); ?></strong> — you must be at least <?php echo cert_min_age($bookMovie['Certificate']); ?> to book it. Your account age is <?php echo $myAge; ?>.</div>
 <?php endif; ?>
 
 <form method="POST" action="booking.php" id="bookingForm">
@@ -153,17 +185,21 @@ include 'includes/header.php';
             <div class="hint">7-15 digits, numbers only.</div>
         </div>
         <div class="form-group">
-            <label for="movie_id">Movie &amp; Showtime</label>
-            <select id="movie_id" name="movie_id" required>
-                <option value="">-- Select a showtime --</option>
-                <?php while ($m = $movies->fetch_assoc()):
-                    $selected = ($preselectMovie == $m['Movie_ID']) ? 'selected' : ''; ?>
-                    <option value="<?php echo $m['Movie_ID']; ?>" <?php echo $selected; ?>>
-                        <?php echo htmlspecialchars($m['Title']); ?> &mdash;
-                        <?php echo date("d M", strtotime($m['Date'])); ?>,
-                        <?php echo date("g:i A", strtotime($m['Showtime'])); ?>
+            <label for="movie_pick">Movie</label>
+            <select id="movie_pick" required>
+                <option value="">-- Select a movie --</option>
+                <?php foreach ($byTitle as $title => $sts):
+                    $sel = ($preselectTitle === $title) ? 'selected' : ''; ?>
+                    <option value="<?php echo htmlspecialchars($title); ?>" <?php echo $sel; ?>>
+                        <?php echo htmlspecialchars($title); ?> (<?php echo htmlspecialchars($sts[0]['Certificate']); ?>)
                     </option>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="movie_id">Showtime</label>
+            <select id="movie_id" name="movie_id" required>
+                <option value="">-- Select a time --</option>
             </select>
         </div>
         <div class="form-group">
@@ -231,6 +267,15 @@ var occupiedSeats = {
 };
 
 var TICKET_PRICE = <?php echo number_format($TICKET_PRICE, 2, '.', ''); ?>;
+
+// Age restriction: the viewer's account age + minimum age per movie (from PHP)
+var USER_AGE = <?php echo (int) $myAge; ?>;
+var movieMinAge = {
+<?php foreach ($moviesRows as $m): ?>
+    "<?php echo (int)$m['Movie_ID']; ?>": {min: <?php echo cert_min_age($m['Certificate']); ?>, cert: "<?php echo addslashes($m['Certificate']); ?>"},
+<?php endforeach; ?>
+};
+
 var ROWS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 var COLS = 10;              // seats per row
 var MAX_SEATS = 10;         // matches server-side validation
@@ -244,6 +289,38 @@ var sumSeats = document.getElementById("sumSeats");
 var sumQty   = document.getElementById("sumQty");
 var sumTotal = document.getElementById("sumTotal");
 var hintEl   = document.getElementById("seatHint");
+var moviePick = document.getElementById("movie_pick");
+var PRESELECT_ID = <?php echo (int) $selectedId; ?>;
+
+// Showtimes grouped by film title (written by PHP; no AJAX)
+var showtimesByTitle = {
+<?php foreach ($byTitle as $title => $sts): ?>
+    "<?php echo addslashes($title); ?>": [
+<?php foreach ($sts as $s): ?>
+        {id: <?php echo (int)$s['Movie_ID']; ?>, label: "<?php echo addslashes(date('d M', strtotime($s['Date'])) . ', ' . date('g:i A', strtotime($s['Showtime']))); ?>"},
+<?php endforeach; ?>
+    ],
+<?php endforeach; ?>
+};
+
+// Fill the Showtime dropdown based on the chosen Movie
+function populateTimes(selectId) {
+    var times = showtimesByTitle[moviePick.value] || [];
+    movieSelect.innerHTML = '<option value="">-- Select a time --</option>';
+    times.forEach(function (t) {
+        var o = document.createElement("option");
+        o.value = t.id;
+        o.textContent = t.label;
+        if (selectId && String(t.id) === String(selectId)) o.selected = true;
+        movieSelect.appendChild(o);
+    });
+}
+moviePick.addEventListener("change", function () {
+    populateTimes(null);
+    selected = [];
+    buildGrid();
+    updateSummary();
+});
 
 var selected = [];  // currently selected seat labels
 
@@ -300,7 +377,7 @@ function onSeatClick() {
         this.classList.remove("selected");
     } else {
         if (selected.length >= MAX_SEATS) {
-            alert("You can select a maximum of " + MAX_SEATS + " seats.");
+            showErrorBox("You can select a maximum of " + MAX_SEATS + " seats.", "Too many seats");
             return;
         }
         selected.push(code);
@@ -314,8 +391,7 @@ function updateSummary() {
     seatsInput.value = selected.join(", ");
     ticketsInput.value = selected.length;
 
-    var opt = movieSelect.options[movieSelect.selectedIndex];
-    sumMovie.textContent = movieSelect.value ? opt.text.split("—")[0].trim() : "—";
+    sumMovie.textContent = moviePick.value ? moviePick.value : "—";
     sumSeats.textContent = selected.length ? selected.join(", ") : "—";
     sumQty.textContent = selected.length;
     sumTotal.textContent = "$" + (selected.length * TICKET_PRICE).toFixed(2);
@@ -334,10 +410,17 @@ movieSelect.addEventListener("change", function () {
     selected = [];
     buildGrid();
     updateSummary();
+    var ar = movieMinAge[movieSelect.value];
+    if (ar && USER_AGE < ar.min) {
+        hintEl.textContent = "⚠ Rated " + ar.cert + " — you must be at least " + ar.min + " to book this film.";
+    }
 });
 
 // Restore any seats kept after a failed server-side validation
 (function restore() {
+    // Populate showtimes for a pre-selected movie (from details page or failed POST)
+    if (moviePick.value) populateTimes(PRESELECT_ID);
+
     var prev = seatsInput.value.trim();
     if (prev) {
         selected = prev.split(/[\s,]+/).filter(function (s) { return s; });
@@ -351,13 +434,16 @@ document.getElementById("bookingForm").addEventListener("submit", function (e) {
     var contact = document.getElementById("contact").value;
     var msg = "";
 
-    if (!movieSelect.value) msg += "Please select a movie showtime.\n";
+    if (!moviePick.value) msg += "Please select a movie.\n";
+    else if (!movieSelect.value) msg += "Please select a showtime.\n";
     if (!/^[0-9]{7,15}$/.test(contact)) msg += "Contact number must be 7-15 digits.\n";
     if (selected.length < 1) msg += "Please select at least one seat.\n";
     if (selected.length > MAX_SEATS) msg += "You can book a maximum of " + MAX_SEATS + " seats.\n";
+    var ar = movieMinAge[movieSelect.value];
+    if (ar && USER_AGE < ar.min) msg += "You must be at least " + ar.min + " to book this " + ar.cert + "-rated film (your age: " + USER_AGE + ").\n";
 
     if (msg !== "") {
-        alert(msg);
+        showErrorBox(msg);
         e.preventDefault();
     }
 });

@@ -12,7 +12,7 @@ $cinemas = $conn->query("SELECT Cinema_ID, Cinema_Name FROM cinema ORDER BY Cine
 $sql = "SELECT m.Movie_ID, m.Title, m.Genre, m.Duration_Min, m.Date, m.Showtime,
                m.Certificate, m.Stars, m.Status, m.Poster, c.Cinema_Name
         FROM movie m LEFT JOIN cinema c ON m.Cinema_ID = c.Cinema_ID
-        WHERE 1=1";
+        WHERE m.Movie_ID IN (SELECT MIN(Movie_ID) FROM movie GROUP BY Title)";
 $params = [];
 $types = "";
 if ($q !== '') { $sql .= " AND m.Title LIKE ?"; $params[] = "%$q%"; $types .= "s"; }
@@ -55,14 +55,11 @@ $result = $stmt->get_result();
         <div class="movie-card">
             <a class="poster<?php echo poster_has_img($row['Poster']); ?>" data-genre="<?php echo htmlspecialchars($row['Genre']); ?>"<?php echo poster_style($row['Poster']); ?>
                href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>">
-                <span class="star-pill"><?php echo starRating($row['Stars']); ?></span>
+                <?php echo cert_badge($row['Certificate']); ?>
                 <span class="dur-pill">&#9201; <?php echo formatDuration($row['Duration_Min']); ?></span>
             </a>
             <div class="movie-card-foot">
-                <div class="mc-head">
-                    <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
-                    <?php echo cert_badge($row['Certificate']); ?>
-                </div>
+                <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
                 <div class="mc-location"><?php echo htmlspecialchars($row['Cinema_Name']); ?> &middot; <?php echo date("d M", strtotime($row['Date'])); ?></div>
                 <?php if ($row['Status'] === 'coming'): ?>
                     <a href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>" class="btn btn-sm btn-ghost">Details</a>

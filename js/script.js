@@ -1,4 +1,51 @@
+/* ============================================================
+   Custom error message box (replaces the browser's default alert)
+   Usage: showErrorBox("msg one\nmsg two")  or  showErrorBox(["a","b"])
+   ============================================================ */
+function showErrorBox(messages, title) {
+    var list = Array.isArray(messages) ? messages : String(messages).split("\n");
+    list = list.filter(function (s) { return s.trim() !== ""; });
+    if (list.length === 0) return;
+
+    var esc = function (s) {
+        return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    };
+    var items = list.map(function (m) { return "<li>" + esc(m) + "</li>"; }).join("");
+
+    var overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML =
+        '<div class="modal-box" role="alertdialog" aria-modal="true" aria-label="Error">' +
+            '<h3>&#9888; ' + esc(title || "Please check the form") + '</h3>' +
+            '<ul>' + items + '</ul>' +
+            '<button type="button" class="btn modal-ok">OK</button>' +
+        '</div>';
+
+    function close() {
+        overlay.remove();
+        document.removeEventListener("keydown", onKey);
+    }
+    function onKey(e) { if (e.key === "Escape") close(); }
+
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+    overlay.querySelector(".modal-ok").addEventListener("click", close);
+    document.addEventListener("keydown", onKey);
+
+    document.body.appendChild(overlay);
+    overlay.querySelector(".modal-ok").focus();
+}
+window.showErrorBox = showErrorBox;
+
 document.addEventListener("DOMContentLoaded", function () {
+
+    // Clickable table rows (e.g. My Bookings → ticket view)
+    document.querySelectorAll(".clickable-row").forEach(function (row) {
+        row.addEventListener("click", function (e) {
+            if (e.target.closest("a, button")) return; // let links/buttons work normally
+            var href = row.getAttribute("data-href");
+            if (href) window.location.href = href;
+        });
+    });
 
     const slides = document.querySelectorAll(".hero-slide");
     const dots = document.querySelectorAll(".dot");
