@@ -162,10 +162,10 @@ INSERT INTO movie (Location, Date, Showtime, Description, Title, Poster, Backdro
 
 -- Coming Soon (posters only; no backdrop yet)
 INSERT INTO movie (Location, Date, Showtime, Description, Title, Poster, Backdrop, Genre, Duration_Min, Certificate, Stars, Status, Cinema_ID) VALUES
-('Hall 1', '2026-10-10', '20:00:00', 'A kingdom rises and a hero is forged in this sweeping epic of loyalty, betrayal and destiny.',           'Crown of Ash',   'crownofash.png',   '', 'Drama',  134, 'PG13', 4, 'coming', 1),
-('Hall 2', '2026-10-18', '21:00:00', 'When the city sleeps, one detective uncovers a conspiracy that reaches the highest towers.',              'Neon Alibi',     'neonalibi.png',    '', 'Action', 118, 'NC16', 4, 'coming', 2),
-('Hall 3', '2026-11-01', '17:30:00', 'A tiny hero with a big heart proves that size is never a limit when courage leads the way.',              'Pocket Dynamo',  'pocketdynamo.png', '', 'Comedy', 101, 'PG',   3, 'coming', 1),
-('Hall 4', '2026-11-14', '19:45:00', 'Two rivals, one prize, and a race across the stars that will decide the fate of a galaxy.',              'Orbit Run',      'orbitrun.png',     '', 'Sci-Fi', 126, 'PG13', 5, 'coming', 2);
+('Hall 1', '2026-10-10', '20:00:00', 'A kingdom rises and a hero is forged in this sweeping epic of loyalty, betrayal and destiny.',           'Crown of Ash',   'crownofash.png',   'crownofashposter.png', 'Drama',  134, 'PG13', 4, 'coming', 1),
+('Hall 2', '2026-10-18', '21:00:00', 'When the city sleeps, one detective uncovers a conspiracy that reaches the highest towers.',              'Neon Alibi',     'neonalibi.png',    'neonalibiposter.png', 'Action', 118, 'NC16', 4, 'coming', 2),
+('Hall 3', '2026-11-01', '17:30:00', 'A tiny hero with a big heart proves that size is never a limit when courage leads the way.',              'Pocket Dynamo',  'pocketdynamo.png', 'pocketdynamoposter.png', 'Comedy', 101, 'PG',   3, 'coming', 1),
+('Hall 4', '2026-11-14', '19:45:00', 'Two rivals, one prize, and a race across the stars that will decide the fate of a galaxy.',              'Orbit Run',      'orbitrun.png',     'orbitrunposter.png', 'Sci-Fi', 126, 'PG13', 5, 'coming', 2);
 
 -- Extra showtimes for each Now-Showing film (same film, more times)
 INSERT INTO movie (Location, Date, Showtime, Description, Title, Poster, Backdrop, Genre, Duration_Min, Certificate, Stars, Status, Cinema_ID)
