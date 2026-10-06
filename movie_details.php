@@ -52,10 +52,9 @@ $showtimes = $stmt2->get_result();
 <div class="detail-grid">
     <div>
         <p class="detail-facts">
-            <strong>Cinema:</strong> <?php echo htmlspecialchars($movie['Cinema_Name']); ?>
-            (<?php echo htmlspecialchars($movie['Bran_Location']); ?>)<br>
-            <strong>Hall / Location:</strong> <?php echo htmlspecialchars($movie['Location']); ?><br>
-            <strong>Contact:</strong> <?php echo htmlspecialchars($movie['Cinema_Cont']); ?>
+            <strong>Cinema:</strong><?php echo htmlspecialchars($movie['Cinema_Name']); ?>(<?php echo htmlspecialchars($movie['Bran_Location']); ?>)<br>
+            <?php if ($movie['Status'] !== 'coming'): ?><strong>Hall / Location:</strong><?php echo htmlspecialchars($movie['Location']); ?><br>
+            <?php endif; ?><strong>Contact:</strong><?php echo htmlspecialchars($movie['Cinema_Cont']); ?>
         </p>
 
 <?php if ($movie['Status'] === 'coming'): ?>
