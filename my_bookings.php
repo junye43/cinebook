@@ -23,7 +23,7 @@ include 'includes/header.php';
 <div class="table-wrap">
 <table class="data-table">
     <thead>
-        <tr><th></th><th>Movie</th><th>Hall</th><th>Date</th><th>Time</th><th>Seats</th><th>Tickets</th><th>Total Paid</th><th></th></tr>
+        <tr><th></th><th>Movie</th><th>Hall</th><th>Date</th><th>Time</th><th>Seats</th><th>Tickets</th><th>Total (demo)</th><th></th></tr>
     </thead>
     <tbody>
         <?php if ($bookings->num_rows > 0): ?>

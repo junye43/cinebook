@@ -13,12 +13,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_verify()) {
     exit;
 }
 
+$logoutError = $_SERVER['REQUEST_METHOD'] === 'POST'
+    ? 'Your session expired. Please try again.' : '';
 include 'includes/header.php';
 ?>
 
 <div class="confirm-wrap" style="max-width:480px;">
     <div class="form-panel" style="text-align:center;">
         <h2>Log out?</h2>
+        <?php if ($logoutError): ?><div class="error-msg"><?php echo htmlspecialchars($logoutError); ?></div><?php endif; ?>
         <p class="form-sub">Are you sure you want to log out of your CineBook account?</p>
         <form method="POST" action="logout.php" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:6px;">
             <?php echo csrf_field(); ?>

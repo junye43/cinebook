@@ -105,7 +105,11 @@ function App() {
   useEffect(() => {
     fetch(API_URL)
       .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then((data) => { setMovies(data.movies || []); setLoading(false); })
+      .then((data) => {
+        if (data.status !== "ok" || !Array.isArray(data.movies)) throw new Error("Invalid movie service response");
+        setMovies(data.movies);
+        setLoading(false);
+      })
       .catch((err) => {
         setError("Could not load movies. Make sure Apache + MySQL are running and the database is imported. (" + err.message + ")");
         setLoading(false);

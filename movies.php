@@ -3,8 +3,9 @@ $pageTitle = "Movies";
 require_once 'includes/db_connect.php';
 include 'includes/header.php';
 
-$cinemaFilter = isset($_GET['cinema']) ? intval($_GET['cinema']) : 0;
-$q = trim($_GET['q'] ?? '');
+$cinemaFilter = isset($_GET['cinema']) && is_scalar($_GET['cinema']) && ctype_digit((string)$_GET['cinema']) ? (int)$_GET['cinema'] : 0;
+$q = is_string($_GET['q'] ?? null) ? trim($_GET['q']) : '';
+$q = substr($q, 0, 100);
 
 $cinemas = $conn->query("SELECT Cinema_ID, Cinema_Name FROM cinema ORDER BY Cinema_Name");
 
@@ -60,7 +61,7 @@ $result = $stmt->get_result();
             </a>
             <div class="movie-card-foot">
                 <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
-                <div class="mc-location"><?php echo htmlspecialchars($row['Cinema_Name']); ?> &middot; <?php echo date("d M", strtotime($row['Date'])); ?></div>
+                <div class="mc-location"><?php echo htmlspecialchars($row['Cinema_Name']); ?> &middot; <?php echo date("d M Y", strtotime($row['Date'])); ?></div>
                 <?php if ($row['Status'] === 'coming'): ?>
                     <a href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>" class="btn btn-sm btn-ghost">Details</a>
                 <?php else: ?>

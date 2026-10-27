@@ -9,7 +9,7 @@ $errors = [];
 $success = "";
 
 // ---- Load the current customer record ----
-$stmt = $conn->prepare("SELECT Cust_Name, Cust_Lname, Cust_Age, Cust_DOB, Cust_Address, Cust_Number, Email
+$stmt = $conn->prepare("SELECT Cust_Name, Cust_Lname, Cust_Age, Cust_DOB, Cust_Address, Cust_Number, Email, Password
                         FROM customer WHERE Cust_ID = ?");
 $stmt->bind_param("i", $custId);
 $stmt->execute();
@@ -24,14 +24,15 @@ if (!$user) { // safety: session points to a missing customer
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify()) $errors[] = "Your session expired. Please try again.";
 
-    $fname   = trim($_POST['fname'] ?? '');
-    $lname   = trim($_POST['lname'] ?? '');
+    $fname   = is_string($_POST['fname'] ?? null) ? trim($_POST['fname']) : '';
+    $lname   = is_string($_POST['lname'] ?? null) ? trim($_POST['lname']) : '';
     // Date of birth is fixed at registration and cannot be changed here.
-    $address = trim($_POST['address'] ?? '');
-    $number  = trim($_POST['number'] ?? '');
-    $email   = trim($_POST['email'] ?? '');
-    $newPass = $_POST['new_password'] ?? '';
-    $confirm = $_POST['confirm_password'] ?? '';
+    $address = is_string($_POST['address'] ?? null) ? trim($_POST['address']) : '';
+    $number  = is_string($_POST['number'] ?? null) ? trim($_POST['number']) : '';
+    $email   = is_string($_POST['email'] ?? null) ? trim($_POST['email']) : '';
+    $newPass = is_string($_POST['new_password'] ?? null) ? $_POST['new_password'] : '';
+    $confirm = is_string($_POST['confirm_password'] ?? null) ? $_POST['confirm_password'] : '';
+    $currentPass = is_string($_POST['current_password'] ?? null) ? $_POST['current_password'] : '';
 
     // ---- Validation ----
     if (!preg_match("/^[A-Za-z][A-Za-z '\-]{1,49}$/", $fname)) $errors[] = "Please enter a valid first name.";
@@ -39,12 +40,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!preg_match('/^[0-9]{7,15}$/', $number)) $errors[] = "Contact number must be 7-15 digits.";
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = "A valid email is required.";
 
-    $changePassword = ($newPass !== '' || $confirm !== '');
+    if (strlen($address) > 255) $errors[] = 'Address must be 255 characters or fewer.';
+    if (strlen($email) > 120) $errors[] = 'Email must be 120 characters or fewer.';
+    $changePassword = ($newPass !== '' || $confirm !== '' || $currentPass !== '');
     if ($changePassword) {
-        if (strlen($newPass) < 6) $errors[] = "New password must be at least 6 characters.";
+        if (strlen($newPass) < 8 || strlen($newPass) > 72) $errors[] = 'New password must be between 8 and 72 characters.';
+        if (!password_verify($currentPass, $user['Password'])) $errors[] = 'Current password is incorrect.';
         if ($newPass !== $confirm) $errors[] = "New passwords do not match.";
     }
 
+    try {
     // Email must be unique to another account
     if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $stmt = $conn->prepare("SELECT Cust_ID FROM customer WHERE Email = ? AND Cust_ID <> ?");
@@ -75,13 +80,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user['Cust_Name'] = $fname; $user['Cust_Lname'] = $lname;
         $user['Cust_Address'] = $address; $user['Cust_Number'] = $number; $user['Email'] = $email;
     }
+    } catch (mysqli_sql_exception $e) {
+        error_log('CineBook profile update failed: ' . $e->getMessage());
+        $errors[] = (int)$e->getCode() === 1062
+            ? 'That email is already used by another account.'
+            : 'Profile could not be saved right now. Please try again.';
+    }
 }
 
 include 'includes/header.php';
 
 // helper: value to show (prefer submitted value on error, else stored)
 function pv($postKey, $stored) {
-    return htmlspecialchars($_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST[$postKey] ?? '') : $stored);
+    return $_SERVER['REQUEST_METHOD'] === 'POST' ? posted_value($postKey) : htmlspecialchars((string)$stored, ENT_QUOTES, 'UTF-8');
 }
 ?>
 
@@ -101,16 +112,16 @@ function pv($postKey, $stored) {
         </div>
     <?php endif; ?>
 
-    <form method="POST" action="profile.php" id="profileForm">
+    <form method="POST" action="profile.php" id="profileForm" novalidate>
         <?php echo csrf_field(); ?>
         <div class="form-row">
             <div class="form-group">
                 <label for="fname">First Name</label>
-                <input type="text" id="fname" name="fname" required value="<?php echo pv('fname', $user['Cust_Name']); ?>">
+                <input type="text" id="fname" name="fname" maxlength="50" required value="<?php echo pv('fname', $user['Cust_Name']); ?>">
             </div>
             <div class="form-group">
                 <label for="lname">Last Name</label>
-                <input type="text" id="lname" name="lname" required value="<?php echo pv('lname', $user['Cust_Lname']); ?>">
+                <input type="text" id="lname" name="lname" maxlength="50" required value="<?php echo pv('lname', $user['Cust_Lname']); ?>">
             </div>
         </div>
         <div class="form-row">
@@ -121,29 +132,34 @@ function pv($postKey, $stored) {
             </div>
             <div class="form-group">
                 <label for="number">Contact Number</label>
-                <input type="tel" id="number" name="number" pattern="[0-9]{7,15}" required value="<?php echo pv('number', $user['Cust_Number']); ?>">
+                <input type="tel" id="number" name="number" maxlength="15" pattern="[0-9]{7,15}" required value="<?php echo pv('number', $user['Cust_Number']); ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="address">Address</label>
-            <input type="text" id="address" name="address" value="<?php echo pv('address', $user['Cust_Address']); ?>">
+            <input type="text" id="address" name="address" maxlength="255" value="<?php echo pv('address', $user['Cust_Address']); ?>">
         </div>
         <div class="form-group">
             <label for="email">Email</label>
-            <input type="email" id="email" name="email" required value="<?php echo pv('email', $user['Email']); ?>">
+            <input type="email" id="email" name="email" maxlength="120" required value="<?php echo pv('email', $user['Email']); ?>">
         </div>
 
         <hr style="border:none;border-top:1px solid var(--border);margin:8px 0 18px;">
         <p class="form-sub" style="margin-bottom:14px;">Change password (leave blank to keep your current password)</p>
+        <div class="form-group">
+                <label for="current_password">Current Password</label>
+                <input type="password" id="current_password" name="current_password" autocomplete="current-password">
+                <div class="hint">Required only when changing your password.</div>
+        </div>
         <div class="form-row">
             <div class="form-group">
                 <label for="new_password">New Password</label>
-                <input type="password" id="new_password" name="new_password" minlength="6">
-                <div class="hint">At least 6 characters.</div>
+                <input type="password" id="new_password" name="new_password" minlength="8" maxlength="72">
+                <div class="hint">8–72 characters.</div>
             </div>
             <div class="form-group">
                 <label for="confirm_password">Confirm New Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" minlength="6">
+                <input type="password" id="confirm_password" name="confirm_password" minlength="8" maxlength="72">
             </div>
         </div>
 
@@ -159,10 +175,14 @@ document.getElementById('profileForm').addEventListener('submit', function (e) {
     if (!name.test(document.getElementById('lname').value.trim())) msg += "Enter a valid last name.\n";
     if (!/^[0-9]{7,15}$/.test(document.getElementById('number').value)) msg += "Contact number must be 7-15 digits.\n";
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(document.getElementById('email').value.trim())) msg += "Enter a valid email.\n";
+    if (document.getElementById('address').value.trim().length > 255) msg += "Address must be 255 characters or fewer.\n";
+    if (document.getElementById('email').value.trim().length > 120) msg += "Email must be 120 characters or fewer.\n";
+    var old = document.getElementById('current_password').value;
     var np = document.getElementById('new_password').value;
     var cp = document.getElementById('confirm_password').value;
-    if (np !== "" || cp !== "") {
-        if (np.length < 6) msg += "New password must be at least 6 characters.\n";
+    if (np !== "" || cp !== "" || old !== "") {
+        if (!old) msg += "Enter your current password.\n";
+        if (np.length < 8 || np.length > 72) msg += "New password must be between 8 and 72 characters.\n";
         if (np !== cp) msg += "New passwords do not match.\n";
     }
     if (msg !== "") { showErrorBox(msg); e.preventDefault(); }

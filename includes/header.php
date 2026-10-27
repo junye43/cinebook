@@ -54,7 +54,7 @@ function starRating($stars) {
         <form class="header-search" method="GET" action="movies.php" role="search">
             <span class="ico">&#128269;</span>
             <input type="search" name="q" placeholder="Search movies…"
-                   value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
+                   value="<?php echo htmlspecialchars(is_string($_GET['q'] ?? null) ? substr($_GET['q'],0,100) : ''); ?>">
         </form>
     </div>
 </header>

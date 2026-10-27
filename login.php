@@ -10,10 +10,11 @@ $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify()) $errors[] = "Your session expired. Please try again.";
 
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $email = is_string($_POST['email'] ?? null) ? trim($_POST['email']) : '';
+    $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
 
     if (empty($errors)) {
+        try {
         $stmt = $conn->prepare("SELECT Cust_ID, Cust_Name, Password FROM customer WHERE Email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
@@ -30,6 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         $errors[] = "Incorrect email or password.";
+        } catch (mysqli_sql_exception $e) {
+            error_log('CineBook login failed: ' . $e->getMessage());
+            $errors[] = 'Login is temporarily unavailable. Please try again.';
+        }
     }
 }
 
@@ -49,12 +54,12 @@ $regLink = 'register.php' . (isset($_GET['redirect']) ? '?redirect=' . urlencode
         <div class="error-msg"><?php foreach ($errors as $e) echo "<p>".htmlspecialchars($e)."</p>"; ?></div>
     <?php endif; ?>
 
-    <form method="POST" action="login.php" id="loginForm">
+    <form method="POST" action="login.php" id="loginForm" novalidate>
         <?php echo csrf_field(); ?>
         <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect); ?>">
         <div class="form-group">
             <label for="email">Email</label>
-            <input type="email" id="email" name="email" required value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
+            <input type="email" id="email" name="email" maxlength="120" required value="<?php echo posted_value('email'); ?>">
         </div>
         <div class="form-group">
             <label for="password">Password</label>

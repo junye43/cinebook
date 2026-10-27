@@ -6,119 +6,151 @@ $errors = [];
 $preselectMovie = isset($_GET['movie_id']) ? intval($_GET['movie_id']) : 0;
 
 // ---- Require login before booking ----
+require_once 'includes/booking_validation.php';
 $returnTo = 'booking.php' . ($preselectMovie ? '?movie_id=' . $preselectMovie : '');
 require_login($returnTo);
-$custId = current_user_id();
+$custId = (int) current_user_id();
 
-// ---- Prefill the form from the logged-in customer ----
+// ---- Prefill customer details ----
 $stmt = $conn->prepare("SELECT Cust_Name, Cust_Lname, Cust_Age, Cust_DOB, Email, Cust_Number FROM customer WHERE Cust_ID = ?");
 $stmt->bind_param("i", $custId);
 $stmt->execute();
-$me = $stmt->get_result()->fetch_assoc() ?: [];
-$prefillName    = trim(($me['Cust_Name'] ?? '') . ' ' . ($me['Cust_Lname'] ?? ''));
-$prefillEmail   = $me['Email'] ?? '';
-$prefillContact = $me['Cust_Number'] ?? '';
-$myAge          = age_from_dob($me['Cust_DOB'] ?? '');     // derive from DOB
-if ($myAge === null) $myAge = (int) ($me['Cust_Age'] ?? 0); // fallback for legacy rows
+$me = $stmt->get_result()->fetch_assoc();
+if (!$me) {
+    session_unset();
+    header('Location: login.php?redirect=booking.php');
+    exit;
+}
+$prefillName = trim($me['Cust_Name'] . ' ' . $me['Cust_Lname']);
+$prefillEmail = $me['Email'];
+$prefillContact = $me['Cust_Number'];
+$myAge = age_from_dob($me['Cust_DOB'] ?? '');
+if ($myAge === null) $myAge = (int) ($me['Cust_Age'] ?? 0);
 
-$moviesRes  = $conn->query("SELECT Movie_ID, Title, Date, Showtime, Certificate FROM movie WHERE Status = 'showing' ORDER BY Date, Showtime");
-$moviesRows = $moviesRes ? $moviesRes->fetch_all(MYSQLI_ASSOC) : [];
+// Cinema showtimes are Singapore local time.
+$nowSingapore = new DateTimeImmutable('now', new DateTimeZone('Asia/Singapore'));
+$nowStr = $nowSingapore->format('Y-m-d H:i:s');
+$stmt = $conn->prepare("SELECT Movie_ID, Title, Date, Showtime, Certificate FROM movie
+                        WHERE Status = 'showing' AND TIMESTAMP(Date, Showtime) > ?
+                        ORDER BY Date, Showtime");
+$stmt->bind_param('s', $nowStr);
+$stmt->execute();
+$moviesRows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// Preselected movie (for the page banner image + age check)
 $bookMovie = null;
 if ($preselectMovie) {
     $st = $conn->prepare("SELECT Title, Genre, Poster, Backdrop, Certificate FROM movie WHERE Movie_ID = ?");
-    $st->bind_param("i", $preselectMovie);
+    $st->bind_param('i', $preselectMovie);
     $st->execute();
     $bookMovie = $st->get_result()->fetch_assoc();
 }
-$paymentTypes = $conn->query("SELECT Payment_Type_ID, Payment_Type FROM payment_type");
+$paymentTypes = $conn->query("SELECT Payment_Type_ID, Payment_Type FROM payment_type ORDER BY Payment_Type_ID");
 
-// ---- Build "already booked" seat map per showtime (server-side, no AJAX) ----
-// Each reservation stores seats as free text like "A1, A2". We parse them into
-// a per-movie list so the seat picker can grey out taken seats on the client.
-$occupiedByMovie = [];
-$occRes = $conn->query("SELECT Movie_ID, Seats FROM reservation WHERE Movie_ID IS NOT NULL");
-if ($occRes) {
-    while ($o = $occRes->fetch_assoc()) {
-        $mid = (int) $o['Movie_ID'];
-        foreach (preg_split('/[\s,]+/', trim($o['Seats'])) as $seat) {
-            $seat = strtoupper(trim($seat));
-            if ($seat !== '') $occupiedByMovie[$mid][] = $seat;
-        }
-    }
-}
 $TICKET_PRICE = 12.50;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // ---- CSRF check ----
-    if (!csrf_verify()) $errors[] = "Your session expired. Please submit the form again.";
+    if (!csrf_verify()) $errors[] = 'Your session expired. Please submit the form again.';
 
-    // ---- Collect & sanitize form fields ----
-    $fullName   = trim($_POST['full_name'] ?? '');
-    $email      = trim($_POST['email'] ?? '');
-    $contact    = trim($_POST['contact'] ?? '');
-    $movieId    = intval($_POST['movie_id'] ?? 0);
-    $numTickets = intval($_POST['num_tickets'] ?? 0);
-    $seats      = trim($_POST['seats'] ?? '');
-    $paymentId  = intval($_POST['payment_type'] ?? 0);
+    $fullName = cb_post_text('full_name');
+    $email = cb_post_text('email');
+    $contact = cb_post_text('contact');
+    $movieId = cb_post_positive_int('movie_id');
+    $numTickets = cb_post_positive_int('num_tickets');
+    $seatsText = cb_post_text('seats');
+    $paymentId = cb_post_positive_int('payment_type');
 
-    // ---- Server-side validation ----
-    if ($fullName === '') $errors[] = "Full name is required.";
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = "A valid email address is required.";
-    if (!preg_match('/^[0-9]{7,15}$/', $contact)) $errors[] = "Contact number must be 7-15 digits.";
-    if ($movieId <= 0) $errors[] = "Please select a movie showtime.";
-    if ($numTickets < 1 || $numTickets > 10) $errors[] = "Number of tickets must be between 1 and 10.";
-    if ($seats === '') $errors[] = "Please select your seats.";
-    if (!preg_match('/^[A-Z][0-9]{1,2}(,\s*[A-Z][0-9]{1,2})*$/', $seats)) $errors[] = "Seat format looks invalid.";
-    if ($paymentId <= 0) $errors[] = "Please select a payment method.";
+    if ($fullName === '') $errors[] = 'Full name is required.';
+    elseif (strlen($fullName) > 100) $errors[] = 'Full name must be 100 characters or fewer.';
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 120) $errors[] = 'Please enter a valid email (maximum 120 characters).';
+    if (!preg_match('/^[0-9]{7,15}$/D', $contact)) $errors[] = 'Contact number must contain 7–15 digits.';
+    if ($movieId <= 0) $errors[] = 'Please select a movie showtime.';
+    if ($numTickets < 1 || $numTickets > 10) $errors[] = 'Number of tickets must be between 1 and 10.';
+    $seatCheck = cb_validate_seats($seatsText, $numTickets);
+    $errors = array_merge($errors, $seatCheck['errors']);
+    if ($paymentId <= 0) $errors[] = 'Please select a payment method.';
 
-    if (empty($errors)) {
-        // Fetch movie showtime details for the reservation record
-        $stmt = $conn->prepare("SELECT Title, Date, Showtime, Certificate, Status FROM movie WHERE Movie_ID = ?");
-        $stmt->bind_param("i", $movieId);
-        $stmt->execute();
-        $movieRow = $stmt->get_result()->fetch_assoc();
+    if (!$errors) {
+        $transactionStarted = false;
+        try {
+            $conn->begin_transaction();
+            $transactionStarted = true;
 
-        // ---- Coming-soon films are not open for booking ----
-        if ($movieRow && $movieRow['Status'] !== 'showing') {
-            $errors[] = "This film is not open for booking yet.";
-        }
-
-        // ---- Age-restriction check (certificate vs account age) ----
-        $minAge = $movieRow ? cert_min_age($movieRow['Certificate']) : 0;
-        if ($movieRow && $myAge < $minAge) {
-            $errors[] = "This film is rated {$movieRow['Certificate']} — you must be at least {$minAge} to book it (your account age is {$myAge}).";
-        }
-
-        if (!$movieRow) {
-            $errors[] = "Selected movie could not be found.";
-        } elseif (empty($errors)) {
-            // Booking is tied to the logged-in customer ($custId).
-
-            // ---- Insert reservation ----
-            $stmt = $conn->prepare("INSERT INTO reservation (Name, Time, Date, Cont_Num, Seats, Num_Tickets, Cust_ID, Movie_ID)
-                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssssiii", $fullName, $movieRow['Showtime'], $movieRow['Date'], $contact, $seats, $numTickets, $custId, $movieId);
+            // Serializes all reservations for the same showtime (same Movie_ID).
+            $stmt = $conn->prepare("SELECT Title, Date, Showtime, Certificate, Status FROM movie WHERE Movie_ID = ? FOR UPDATE");
+            $stmt->bind_param('i', $movieId);
             $stmt->execute();
-            $resId = $conn->insert_id;
+            $movieRow = $stmt->get_result()->fetch_assoc();
 
-            // ---- Insert transaction ----
-            $total = $TICKET_PRICE * $numTickets;
-            $today = date("Y-m-d");
-            $stmt = $conn->prepare("INSERT INTO transaction (Cust_ID, Res_ID, Trans_Date, Start_Date, End_Date, Total_Payment, Payment_Type_ID)
-                                     VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("iisssdi", $custId, $resId, $today, $today, $movieRow['Date'], $total, $paymentId);
+            if (!$movieRow) $errors[] = 'The selected showtime could not be found.';
+            elseif ($movieRow['Status'] !== 'showing') $errors[] = 'This film is not open for booking.';
+            elseif (!cb_showtime_is_future($movieRow['Date'], $movieRow['Showtime'])) {
+                $errors[] = 'This showtime has already passed. Please choose another time.';
+            }
+            if ($movieRow && $myAge < cert_min_age($movieRow['Certificate'])) {
+                $errors[] = 'This film is rated ' . $movieRow['Certificate'] . ' — you must be at least ' . cert_min_age($movieRow['Certificate']) . ' to book it.';
+            }
+
+            $stmt = $conn->prepare('SELECT Payment_Type_ID FROM payment_type WHERE Payment_Type_ID = ?');
+            $stmt->bind_param('i', $paymentId);
             $stmt->execute();
+            if (!$stmt->get_result()->fetch_assoc()) $errors[] = 'Please select a valid payment method.';
 
-            $_SESSION['cust_id'] = $custId;
-            $_SESSION['cust_name'] = $fullName;
+            if (!$errors) {
+                $stmt = $conn->prepare('SELECT Seat_Code FROM reservation_seat WHERE Movie_ID = ?');
+                $stmt->bind_param('i', $movieId);
+                $stmt->execute();
+                $taken = array_column($stmt->get_result()->fetch_all(MYSQLI_ASSOC), 'Seat_Code');
+                $conflicts = array_intersect($seatCheck['seats'], $taken);
+                if ($conflicts) {
+                    $errors[] = 'Seat ' . implode(', ', $conflicts) . ' was just booked. Please select another seat and try again.';
+                }
+            }
 
-            header("Location: confirmation.php?res_id=" . $resId);
-            exit;
+            if (!$errors) {
+                $seats = implode(', ', $seatCheck['seats']);
+                $stmt = $conn->prepare('INSERT INTO reservation (Name, Time, Date, Cont_Num, Seats, Num_Tickets, Cust_ID, Movie_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                $stmt->bind_param('sssssiii', $fullName, $movieRow['Showtime'], $movieRow['Date'], $contact, $seats, $numTickets, $custId, $movieId);
+                $stmt->execute();
+                $resId = $conn->insert_id;
+
+                $stmt = $conn->prepare('INSERT INTO reservation_seat (Res_Code, Movie_ID, Seat_Code) VALUES (?, ?, ?)');
+                foreach ($seatCheck['seats'] as $seat) {
+                    $stmt->bind_param('iis', $resId, $movieId, $seat);
+                    $stmt->execute();
+                }
+
+                $total = $TICKET_PRICE * $numTickets;
+                $today = $nowSingapore->format('Y-m-d');
+                $stmt = $conn->prepare('INSERT INTO transaction (Cust_ID, Res_ID, Trans_Date, Start_Date, End_Date, Total_Payment, Payment_Type_ID) VALUES (?, ?, ?, ?, ?, ?, ?)');
+                $stmt->bind_param('iisssdi', $custId, $resId, $today, $today, $movieRow['Date'], $total, $paymentId);
+                $stmt->execute();
+                $conn->commit();
+                $transactionStarted = false;
+                $_SESSION['cust_name'] = $fullName;
+                header('Location: confirmation.php?res_id=' . $resId);
+                exit;
+            }
+            $conn->rollback();
+            $transactionStarted = false;
+        } catch (mysqli_sql_exception $e) {
+            if ($transactionStarted) $conn->rollback();
+            error_log('CineBook booking failure: ' . $e->getMessage());
+            $errors[] = ((int)$e->getCode() === 1062)
+                ? 'One of these seats was just reserved. Refresh and pick another seat.'
+                : 'Booking could not be completed right now. Please try again.';
         }
     }
 }
+
+// Refresh availability AFTER processing a failed booking (including concurrent races).
+// Occupancy is shown on the client for convenience. The POST handler
+// rechecks it inside an exclusive showtime lock; the DB unique key is final protection.
+$occupiedByMovie = [];
+$occRes = $conn->query("SELECT Movie_ID, Seat_Code FROM reservation_seat");
+while ($o = $occRes->fetch_assoc()) {
+    $occupiedByMovie[(int)$o['Movie_ID']][] = $o['Seat_Code'];
+}
+
 
 // Group showtimes by film for the two-step movie → time pickers
 $byTitle = [];
@@ -161,7 +193,7 @@ include 'includes/header.php';
     <div class="error-msg">This film is rated <strong><?php echo htmlspecialchars($bookMovie['Certificate']); ?></strong> — you must be at least <?php echo cert_min_age($bookMovie['Certificate']); ?> to book it. Your account age is <?php echo $myAge; ?>.</div>
 <?php endif; ?>
 
-<form method="POST" action="booking.php" id="bookingForm">
+<form method="POST" action="booking.php" id="bookingForm" novalidate>
 <?php echo csrf_field(); ?>
 <div class="booking-layout">
 
@@ -170,18 +202,18 @@ include 'includes/header.php';
         <h3>Your Details</h3>
         <div class="form-group">
             <label for="full_name">Full Name</label>
-            <input type="text" id="full_name" name="full_name" required
-                   value="<?php echo htmlspecialchars($_POST['full_name'] ?? $prefillName); ?>">
+            <input type="text" id="full_name" name="full_name" maxlength="100" required
+                   value="<?php echo htmlspecialchars($_SERVER['REQUEST_METHOD'] === 'POST' ? cb_post_text('full_name') : $prefillName); ?>">
         </div>
         <div class="form-group">
             <label for="email">Email</label>
-            <input type="email" id="email" name="email" required
-                   value="<?php echo htmlspecialchars($_POST['email'] ?? $prefillEmail); ?>">
+            <input type="email" id="email" name="email" maxlength="120" required
+                   value="<?php echo htmlspecialchars($_SERVER['REQUEST_METHOD'] === 'POST' ? cb_post_text('email') : $prefillEmail); ?>">
         </div>
         <div class="form-group">
             <label for="contact">Contact Number</label>
-            <input type="tel" id="contact" name="contact" pattern="[0-9]{7,15}" required
-                   placeholder="e.g. 91234567" value="<?php echo htmlspecialchars($_POST['contact'] ?? $prefillContact); ?>">
+            <input type="tel" id="contact" name="contact" maxlength="15" pattern="[0-9]{7,15}" required
+                   placeholder="e.g. 91234567" value="<?php echo htmlspecialchars($_SERVER['REQUEST_METHOD'] === 'POST' ? cb_post_text('contact') : $prefillContact); ?>">
             <div class="hint">7-15 digits, numbers only.</div>
         </div>
         <div class="form-group">
@@ -203,11 +235,11 @@ include 'includes/header.php';
             </select>
         </div>
         <div class="form-group">
-            <label for="payment_type">Payment Method</label>
+            <label for="payment_type">Payment Method <small>(demo only — no actual charge)</small></label>
             <select id="payment_type" name="payment_type" required>
                 <option value="">-- Select payment method --</option>
                 <?php while ($p = $paymentTypes->fetch_assoc()): ?>
-                    <option value="<?php echo $p['Payment_Type_ID']; ?>">
+                    <option value="<?php echo $p['Payment_Type_ID']; ?>" <?php echo (isset($_POST['payment_type']) && (string) $_POST['payment_type'] === (string)$p['Payment_Type_ID']) ? 'selected' : ''; ?>>
                         <?php echo htmlspecialchars($p['Payment_Type']); ?>
                     </option>
                 <?php endwhile; ?>
@@ -242,8 +274,8 @@ include 'includes/header.php';
         <div class="summary-row"><span>Convenience Fee</span><span class="val">FREE</span></div>
         <div class="summary-row total"><span>Total</span><span class="val" id="sumTotal">$0.00</span></div>
 
-        <input type="hidden" id="seats" name="seats" value="<?php echo htmlspecialchars($_POST['seats'] ?? ''); ?>">
-        <input type="hidden" id="num_tickets" name="num_tickets" value="<?php echo htmlspecialchars($_POST['num_tickets'] ?? '0'); ?>">
+        <input type="hidden" id="seats" name="seats" value="<?php echo htmlspecialchars(cb_post_text('seats')); ?>">
+        <input type="hidden" id="num_tickets" name="num_tickets" value="<?php echo htmlspecialchars(cb_post_text('num_tickets') ?: '0'); ?>">
 
         <button type="submit" class="btn btn-block" style="margin-top:18px;">Confirm Booking</button>
     </div>
@@ -257,24 +289,15 @@ include 'includes/header.php';
    The occupied-seat map is written directly into JS by PHP.
    ============================================================ */
 
-// Seats already booked, grouped by Movie_ID (generated server-side by PHP)
-var occupiedSeats = {
-<?php foreach ($occupiedByMovie as $mid => $seats): ?>
-    "<?php echo (int)$mid; ?>": [<?php
-        echo implode(',', array_map(function ($s) { return '"' . addslashes($s) . '"'; }, $seats));
-    ?>],
-<?php endforeach; ?>
-};
-
-var TICKET_PRICE = <?php echo number_format($TICKET_PRICE, 2, '.', ''); ?>;
-
-// Age restriction: the viewer's account age + minimum age per movie (from PHP)
-var USER_AGE = <?php echo (int) $myAge; ?>;
-var movieMinAge = {
-<?php foreach ($moviesRows as $m): ?>
-    "<?php echo (int)$m['Movie_ID']; ?>": {min: <?php echo cert_min_age($m['Certificate']); ?>, cert: "<?php echo addslashes($m['Certificate']); ?>"},
-<?php endforeach; ?>
-};
+// Encode all PHP values as real JSON (including unusual movie titles).
+var occupiedSeats = <?php echo json_encode($occupiedByMovie, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+var TICKET_PRICE = <?php echo json_encode($TICKET_PRICE); ?>;
+var USER_AGE = <?php echo (int)$myAge; ?>;
+var movieMinAge = <?php
+    $minAgeMap = [];
+    foreach ($moviesRows as $m) $minAgeMap[$m['Movie_ID']] = ['min' => cert_min_age($m['Certificate']), 'cert' => $m['Certificate']];
+    echo json_encode($minAgeMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+?>;
 
 var ROWS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 var COLS = 10;              // seats per row
@@ -292,16 +315,20 @@ var hintEl   = document.getElementById("seatHint");
 var moviePick = document.getElementById("movie_pick");
 var PRESELECT_ID = <?php echo (int) $selectedId; ?>;
 
-// Showtimes grouped by film title (written by PHP; no AJAX)
-var showtimesByTitle = {
-<?php foreach ($byTitle as $title => $sts): ?>
-    "<?php echo addslashes($title); ?>": [
-<?php foreach ($sts as $s): ?>
-        {id: <?php echo (int)$s['Movie_ID']; ?>, label: "<?php echo addslashes(date('d M', strtotime($s['Date'])) . ', ' . date('g:i A', strtotime($s['Showtime']))); ?>"},
-<?php endforeach; ?>
-    ],
-<?php endforeach; ?>
-};
+// Showtimes grouped by film title (escaped JSON, not quoted JavaScript).
+var showtimesByTitle = <?php
+    $timesJson = [];
+    foreach ($byTitle as $title => $sts) {
+        $timesJson[$title] = [];
+        foreach ($sts as $entry) {
+            $timesJson[$title][] = [
+                'id' => (int) $entry['Movie_ID'],
+                'label' => date('d M Y', strtotime($entry['Date'])) . ', ' . date('g:i A', strtotime($entry['Showtime']))
+            ];
+        }
+    }
+    echo json_encode($timesJson, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+?>;
 
 // Fill the Showtime dropdown based on the chosen Movie
 function populateTimes(selectId) {
@@ -423,7 +450,8 @@ movieSelect.addEventListener("change", function () {
 
     var prev = seatsInput.value.trim();
     if (prev) {
-        selected = prev.split(/[\s,]+/).filter(function (s) { return s; });
+        selected = [...new Set(prev.split(/[\s,]+/).map(function (s) { return s.toUpperCase(); })
+            .filter(function (s) { return /^[A-H](10|[1-9])$/.test(s) && currentOccupied().indexOf(s) === -1; }))].slice(0, MAX_SEATS);
     }
     buildGrid();
     updateSummary();
@@ -431,9 +459,14 @@ movieSelect.addEventListener("change", function () {
 
 // ---- Submit validation (client-side, before the form is sent) ----
 document.getElementById("bookingForm").addEventListener("submit", function (e) {
-    var contact = document.getElementById("contact").value;
+    var contact = document.getElementById("contact").value.trim();
+    var fullName = document.getElementById("full_name").value.trim();
+    var email = document.getElementById("email").value.trim();
     var msg = "";
 
+    if (!fullName || fullName.length > 100) msg += "Full name must be 1–100 characters.\n";
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 120) msg += "Enter a valid email (maximum 120 characters).\n";
+    if (!document.getElementById("payment_type").value) msg += "Please select a payment method.\n";
     if (!moviePick.value) msg += "Please select a movie.\n";
     else if (!movieSelect.value) msg += "Please select a showtime.\n";
     if (!/^[0-9]{7,15}$/.test(contact)) msg += "Contact number must be 7-15 digits.\n";

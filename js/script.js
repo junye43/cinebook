@@ -12,6 +12,7 @@ function showErrorBox(messages, title) {
     };
     var items = list.map(function (m) { return "<li>" + esc(m) + "</li>"; }).join("");
 
+    var previousFocus = document.activeElement;
     var overlay = document.createElement("div");
     overlay.className = "modal-overlay";
     overlay.innerHTML =
@@ -24,8 +25,15 @@ function showErrorBox(messages, title) {
     function close() {
         overlay.remove();
         document.removeEventListener("keydown", onKey);
+        if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
     }
-    function onKey(e) { if (e.key === "Escape") close(); }
+    function onKey(e) {
+        if (e.key === "Escape") close();
+        if (e.key === "Tab") {
+            e.preventDefault(); // only one interactive element inside this modal
+            overlay.querySelector('.modal-ok').focus();
+        }
+    }
 
     overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
     overlay.querySelector(".modal-ok").addEventListener("click", close);
@@ -102,4 +110,44 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     startAuto();
+});
+
+
+/* ========== LOCAL MP4 TRAILER POPUP ========== */
+document.addEventListener("DOMContentLoaded", function () {
+    const openBtn = document.getElementById("watchTrailerBtn");
+    const closeBtn = document.getElementById("closeTrailerBtn");
+    const dialog = document.getElementById("trailerDialog");
+    const video = document.getElementById("trailerVideo");
+
+    // Other pages do not contain the trailer popup.
+    if (!openBtn || !closeBtn || !dialog || !video) return;
+
+    openBtn.addEventListener("click", function () {
+        if (!dialog.open) dialog.showModal();
+        const playAttempt = video.play();
+        if (playAttempt && typeof playAttempt.catch === "function") {
+            // Some browsers block autoplay; users can click Play instead.
+            playAttempt.catch(function () {});
+        }
+    });
+
+    closeBtn.addEventListener("click", function () {
+        dialog.close();
+    });
+
+    dialog.addEventListener("click", function (event) {
+        // Detect a click on the dark area outside the dialog contents.
+        const rect = dialog.getBoundingClientRect();
+        if (event.clientX < rect.left || event.clientX > rect.right ||
+            event.clientY < rect.top || event.clientY > rect.bottom) {
+            dialog.close();
+        }
+    });
+
+    // Also fires after the Escape key closes the native dialog.
+    dialog.addEventListener("close", function () {
+        video.pause();
+        video.currentTime = 0;
+    });
 });

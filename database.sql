@@ -6,7 +6,8 @@
 --   1. Click "Import" on the phpMyAdmin home page (no database needs to
 --      be selected — this file creates it).
 --   2. Choose this file and click "Go".
--- Re-running this file safely drops and recreates everything.
+-- DANGER: Re-importing DROPS existing tables, accounts and bookings!
+-- Use update_booking_safety.sql for existing databases.
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS cinebook_db
@@ -15,6 +16,7 @@ USE cinebook_db;
 
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS transaction;
+DROP TABLE IF EXISTS reservation_seat;
 DROP TABLE IF EXISTS reservation;
 DROP TABLE IF EXISTS payment_type;
 DROP TABLE IF EXISTS customer;
@@ -70,6 +72,7 @@ CREATE TABLE movie (
     Title VARCHAR(150) NOT NULL,
     Poster VARCHAR(255) NOT NULL DEFAULT '',
     Backdrop VARCHAR(255) NOT NULL DEFAULT '',
+    Trailer_File VARCHAR(255) NULL DEFAULT NULL,
     Genre VARCHAR(80),
     Duration_Min INT,
     Certificate VARCHAR(10) DEFAULT 'PG',
@@ -112,6 +115,21 @@ CREATE TABLE reservation (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------
+-- RESERVATION_SEAT: one row per taken seat; database-enforced uniqueness.
+-- Every Movie_ID represents one specific showtime.
+-- ---------------------------------------------------
+CREATE TABLE reservation_seat (
+    Res_Code INT NOT NULL,
+    Movie_ID INT NOT NULL,
+    Seat_Code VARCHAR(3) NOT NULL,
+    PRIMARY KEY (Movie_ID, Seat_Code),
+    UNIQUE KEY uniq_reservation_seat (Res_Code, Seat_Code),
+    FOREIGN KEY (Res_Code) REFERENCES reservation(Res_Code) ON DELETE CASCADE,
+    FOREIGN KEY (Movie_ID) REFERENCES movie(Movie_ID),
+    CONSTRAINT chk_cb_seat_code CHECK (Seat_Code REGEXP '^[A-H](10|[1-9])$')
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------
 -- PAYMENT_TYPE
 -- ---------------------------------------------------
 CREATE TABLE payment_type (
@@ -151,7 +169,7 @@ INSERT INTO cinema (Cinema_Name, Cinema_Cont, Bran_ID) VALUES
 ('Silver Village Jurong', '65001234', 1),
 ('Silver Village Orchard', '65005678', 2);
 
--- Now Showing (Poster + Backdrop image files live in images/posters and images/backdrops)
+-- Now Showing: 1–6 November 2026 (Poster + Backdrop image files live in images/posters and images/backdrops)
 INSERT INTO movie (Location, Date, Showtime, Description, Title, Poster, Backdrop, Genre, Duration_Min, Certificate, Stars, Status, Cinema_ID) VALUES
 ('Hall 1', '2026-11-01', '14:30:00', 'A brilliant neurosurgeon is drawn into the world of the mystic arts on a journey of physical and spiritual healing, confronting a danger that threatens the entire multiverse.', 'Stellar Horizon',     'stellarhorizon.png',    'stellarhorizonposter.png',    'Sci-Fi', 128, 'PG13', 5, 'showing', 1),
 ('Hall 2', '2026-11-02', '18:00:00', 'A heartwarming story of friendship and courage set on a remote coast, following a keeper who guards more than just the light.',                                          'The Last Lighthouse', 'thelastlighthouse.png', 'thelastlighthouseposter.png', 'Drama',  105, 'PG',   4, 'showing', 1),
@@ -160,7 +178,7 @@ INSERT INTO movie (Location, Date, Showtime, Description, Title, Poster, Backdro
 ('Hall 2', '2026-11-05', '19:30:00', 'A gripping thriller where nothing is as it seems and every clue leads deeper into the dark.',                                                                             'Silent Echo',         'silentecho.png',        'silentechoposter.png',        'Action', 122, 'M18',  4, 'showing', 1),
 ('Hall 4', '2026-11-06', '15:15:00', 'An animated adventure across enchanted lands, full of heart, wonder and unlikely heroes.',                                                                              'Painted Skies',       'paintedskies.png',      'paintedskiesposter.png',      'Comedy',  92, 'PG',   5, 'showing', 2);
 
--- Coming Soon (posters only; no backdrop yet)
+-- Coming Soon: releases in 2027 (Poster and Backdrop image files already exist)
 INSERT INTO movie (Location, Date, Showtime, Description, Title, Poster, Backdrop, Genre, Duration_Min, Certificate, Stars, Status, Cinema_ID) VALUES
 ('Hall 1', '2027-01-15', '20:00:00', 'A kingdom rises and a hero is forged in this sweeping epic of loyalty, betrayal and destiny.',           'Crown of Ash',   'crownofash.png',   'crownofashposter.png', 'Drama',  134, 'PG13', 4, 'coming', 1),
 ('Hall 2', '2027-02-19', '21:00:00', 'When the city sleeps, one detective uncovers a conspiracy that reaches the highest towers.',              'Neon Alibi',     'neonalibi.png',    'neonalibiposter.png', 'Action', 118, 'NC16', 4, 'coming', 2),
@@ -177,3 +195,21 @@ WHERE base.Status = 'showing';
 
 INSERT INTO payment_type (Payment_Type) VALUES
 ('Credit Card'), ('Debit Card'), ('PayNow');
+
+
+-- ---------------------------------------------------
+-- LOCAL MP4 MOVIE TRAILERS
+-- Video files belong in assets/trailers/ in the project folder.
+-- The website hides the trailer button until the file exists.
+-- Apply after the extra showtime rows have been inserted.
+-- ---------------------------------------------------
+UPDATE movie SET Trailer_File = 'stellar_horizon.mp4' WHERE Title = 'Stellar Horizon';
+UPDATE movie SET Trailer_File = 'the_last_lighthouse.mp4' WHERE Title = 'The Last Lighthouse';
+UPDATE movie SET Trailer_File = 'midnight_protocol.mp4' WHERE Title = 'Midnight Protocol';
+UPDATE movie SET Trailer_File = 'weekend_warriors.mp4' WHERE Title = 'Weekend Warriors';
+UPDATE movie SET Trailer_File = 'silent_echo.mp4' WHERE Title = 'Silent Echo';
+UPDATE movie SET Trailer_File = 'painted_skies.mp4' WHERE Title = 'Painted Skies';
+UPDATE movie SET Trailer_File = 'crown_of_ash.mp4' WHERE Title = 'Crown of Ash';
+UPDATE movie SET Trailer_File = 'neon_alibi.mp4' WHERE Title = 'Neon Alibi';
+UPDATE movie SET Trailer_File = 'pocket_dynamo.mp4' WHERE Title = 'Pocket Dynamo';
+UPDATE movie SET Trailer_File = 'orbit_run.mp4' WHERE Title = 'Orbit Run';

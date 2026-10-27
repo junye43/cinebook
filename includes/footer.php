@@ -48,6 +48,6 @@
         <span>&copy; <?php echo date("Y"); ?> CineBook — IE4727 Web Application Design Project (Theme 5)</span>
     </div>
 </footer>
-<script src="js/script.js?v=3"></script>
+<script src="js/script.js?v=4"></script>
 </body>
 </html>

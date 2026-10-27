@@ -2,7 +2,10 @@
 $pageTitle = "Booking Confirmation";
 require_once 'includes/db_connect.php';
 
-$resId = isset($_GET['res_id']) ? intval($_GET['res_id']) : 0;
+$resId = isset($_GET['res_id']) && is_scalar($_GET['res_id']) && ctype_digit((string)$_GET['res_id'])
+    ? (int)$_GET['res_id'] : 0;
+require_login('confirmation.php' . ($resId > 0 ? '?res_id=' . $resId : ''));
+$custId = (int)current_user_id();
 
 $stmt = $conn->prepare("SELECT r.Res_Code, r.Name, r.Date, r.Time, r.Seats, r.Num_Tickets, r.Cust_ID,
                                 m.Title, m.Genre, m.Poster, m.Location, c.Cinema_Name, t.Total_Payment, t.Trans_No, p.Payment_Type
@@ -11,15 +14,10 @@ $stmt = $conn->prepare("SELECT r.Res_Code, r.Name, r.Date, r.Time, r.Seats, r.Nu
                          JOIN cinema c ON m.Cinema_ID = c.Cinema_ID
                          JOIN transaction t ON t.Res_ID = r.Res_Code
                          JOIN payment_type p ON t.Payment_Type_ID = p.Payment_Type_ID
-                         WHERE r.Res_Code = ?");
-$stmt->bind_param("i", $resId);
+                         WHERE r.Res_Code = ? AND r.Cust_ID = ?");
+$stmt->bind_param("ii", $resId, $custId);
 $stmt->execute();
 $booking = $stmt->get_result()->fetch_assoc();
-
-// Only the owner may view a booking's ticket.
-if ($booking && is_logged_in() && (int) $booking['Cust_ID'] !== (int) current_user_id()) {
-    $booking = null;
-}
 
 include 'includes/header.php';
 ?>
@@ -42,7 +40,7 @@ include 'includes/header.php';
                 <div><div class="lbl">Venue</div><div class="val"><?php echo htmlspecialchars($booking['Cinema_Name']); ?></div></div>
                 <div><div class="lbl">Hall</div><div class="val"><?php echo htmlspecialchars($booking['Location']); ?></div></div>
                 <div><div class="lbl">Seats</div><div class="val"><?php echo htmlspecialchars($booking['Seats']); ?></div></div>
-                <div><div class="lbl">Total Paid</div><div class="val">$<?php echo number_format($booking['Total_Payment'], 2); ?></div></div>
+                <div><div class="lbl">Total (demo)</div><div class="val">$<?php echo number_format($booking['Total_Payment'], 2); ?></div></div>
                 <div><div class="lbl">Booking Ref</div><div class="val">RES-<?php echo str_pad($booking['Res_Code'], 5, '0', STR_PAD_LEFT); ?></div></div>
                 <div><div class="lbl">Payment</div><div class="val"><?php echo htmlspecialchars($booking['Payment_Type']); ?></div></div>
                 <div><div class="lbl">Txn No.</div><div class="val">TXN-<?php echo str_pad($booking['Trans_No'], 6, '0', STR_PAD_LEFT); ?></div></div>
@@ -57,7 +55,7 @@ include 'includes/header.php';
         </div>
     </div>
 <?php else: ?>
-    <div class="error-msg">Booking not found. Please try booking again.</div>
+    <div class="error-msg">Booking not found or you do not have permission to view it. <a href="my_bookings.php">View your tickets</a>.</div>
 <?php endif; ?>
 
 <?php include 'includes/footer.php'; $conn->close(); ?>

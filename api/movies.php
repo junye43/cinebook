@@ -19,6 +19,7 @@ $sql = "SELECT m.Movie_ID, m.Title, m.Genre, m.Duration_Min, m.Date, m.Showtime,
         LEFT JOIN branch b ON c.Bran_ID = b.Bran_ID
         ORDER BY m.Date ASC, m.Showtime ASC";
 
+try {
 $result = $conn->query($sql);
 
 $movies = [];
@@ -49,4 +50,9 @@ echo json_encode([
     "movies" => $movies,
 ]);
 
+} catch (mysqli_sql_exception $e) {
+    error_log('CineBook movies API failed: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Unable to load movies right now.']);
+}
 $conn->close();

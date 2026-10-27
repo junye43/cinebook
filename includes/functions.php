@@ -24,6 +24,7 @@ function csrf_field() {
 }
 function csrf_verify() {
     return isset($_POST['csrf_token'], $_SESSION['csrf_token'])
+        && is_string($_POST['csrf_token'])
         && hash_equals($_SESSION['csrf_token'], $_POST['csrf_token']);
 }
 
@@ -41,6 +42,7 @@ function require_login($returnTo) {
 
 /* Only allow redirects to a local .php page on this site (prevents open redirects). */
 function safe_local_redirect($target, $default = 'index.php') {
+    if (!is_string($target)) return $default;
     $target = (string) $target;
     if ($target === '' || strpos($target, '://') !== false
         || strpos($target, '//') === 0 || $target[0] === '/') {
@@ -113,4 +115,8 @@ function cert_badge($cert) {
     if ($cert === '') return '';
     $cls = preg_replace('/[^A-Z0-9]/', '', strtoupper($cert));
     return '<span class="cert-badge cert-' . $cls . '">' . htmlspecialchars($cert) . '</span>';
+}
+/** HTML-escape a text field from POST without throwing when malicious arrays are submitted. */
+function posted_value($key, $default = '') {
+    return htmlspecialchars(is_string($_POST[$key] ?? null) ? $_POST[$key] : $default, ENT_QUOTES, 'UTF-8');
 }
