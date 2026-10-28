@@ -112,6 +112,16 @@ nav.main-nav { flex: 1; }
 }
 .nav-links a:hover { color: var(--text); }
 .nav-links a.active { color: var(--gold); }
+/* Highlight the link to the React (Additional Version) front-end */
+.nav-links a.nav-react {
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    font-weight: 600;
+}
+.nav-links a.nav-react:hover {
+    background: var(--gold);
+    color: #1a1400;
+}
 
 .header-search {
     display: flex;

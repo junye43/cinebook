@@ -50,7 +50,7 @@ function MovieCard({ movie }) {
         <p className="r-meta">{movie.cinema} · {formatDate(movie.date)} · {formatTime(movie.showtime)}</p>
         <div className="r-tags">
           <span className="r-tag">{movie.genre}</span>
-          <span className="r-tag gold">CBFC {movie.certificate}</span>
+          <span className="r-tag gold">Rating: {movie.certificate}</span>
         </div>
         <p className="r-desc">{movie.description}</p>
         <div className="r-actions">

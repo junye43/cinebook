@@ -92,7 +92,7 @@ See **[`docs/wireframes.svg`](wireframes.svg)** for polished blueprint wireframe
 ```
 +---------------- BACKDROP BANNER ---------------------+
 ★★★★★   Title
-[CBFC] · Genre · 2h 8m
+[Rating] · Genre · 2h 8m
 +---------------------+  +---------------------------+
 | facts / showtimes   |  | About the movie (synopsis)|
 | [Book Tickets]      |  |                           |
@@ -215,7 +215,36 @@ cinebook/
 
 ---
 
-## 8. (Optional) Modern Enhancement — Additional Version
-Not included in the current Base Version. A separate **React.js** single-page movie browser
-consuming a PHP JSON API over the same MySQL database can be added for the 15% component,
-with justification (modern, reactive, component-based UI beyond the traditional stack).
+## 8. Additional Version — Modern Enhancement (React.js) — *Implemented*
+
+CineBook includes a fully working **Additional Version** for the 15% component: a
+**React.js** single-page movie browser that consumes a **PHP JSON API** reading the
+**same MySQL database** as the Base Version. It is reachable from the main site via the
+**"Explore Movies (React)"** link in the header navigation (`react/index.html`).
+
+**Justification (why it goes beyond the Base Version):** a modern, reactive,
+component-based UI with live client-side search, genre/status filtering and sorting that
+update instantly with **no page reloads** — behaviour the traditional server-rendered
+stack cannot provide. It demonstrates AJAX + JSON, which are intentionally excluded from
+the Base Version.
+
+**How it works**
+- **`api/movies.php`** — a JSON endpoint that queries the shared `movie`/`cinema`/`branch`
+  tables and returns one row per title (`MIN(Movie_ID) GROUP BY Title`, so each film
+  appears once despite multiple showtime rows). Includes error handling (503/500 → JSON).
+- **`react/index.html`** — loads React 18 + Babel (standalone) from a CDN and mounts the app.
+- **`react/app.jsx`** — React with Hooks (`useState`, `useEffect`, `useMemo`): fetches the
+  API once, then filters/sorts in the browser. Cards link back into the Base Version
+  (`booking.php`, `movie_details.php`) so the two versions share data and flows.
+- **`react/react-app.css`** — styling for the React edition.
+
+**Base-Version separation:** AJAX/JSON/React live **only** in `api/` and `react/`. The Base
+Version pages (`index.php`, `movies.php`, etc.) remain framework-free and compliant.
+
+| Additional-Version requirement | Status |
+|---|---|
+| Uses a modern framework (React.js) | ✅ `react/app.jsx` |
+| Reads the same database as the Base Version | ✅ via `api/movies.php` |
+| Reactive UI without page reloads (AJAX + JSON) | ✅ live search / filter / sort |
+| Accessible from the main site | ✅ "Explore Movies (React)" nav link |
+| Written-up justification | ✅ this section |

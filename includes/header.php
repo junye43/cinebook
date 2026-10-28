@@ -32,7 +32,7 @@ function starRating($stars) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="CineBook — browse movie showtimes across our cinemas and book your seats online.">
 <link rel="icon" type="image/png" href="images/cinebooklogo.png">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 <script>
 /* Apply the saved theme before paint (prevents a flash of the wrong theme) */
 (function () {
@@ -52,6 +52,7 @@ function starRating($stars) {
                 <li><a href="movies.php"<?php echo navActive('movies.php'); ?>>Movies</a></li>
                 <li><a href="booking.php"<?php echo navActive('booking.php'); ?>>Book Tickets</a></li>
                 <li><a href="about.php"<?php echo navActive('about.php'); ?>>Theatres</a></li>
+                <li><a href="react/index.html" class="nav-react">Explore Movies (React)</a></li>
                 <?php if (isset($_SESSION['cust_id'])): ?>
                     <li><a href="my_bookings.php"<?php echo navActive('my_bookings.php'); ?>>Your Tickets</a></li>
                     <li><a href="profile.php"<?php echo navActive('profile.php'); ?>>My Profile</a></li>

@@ -52,7 +52,7 @@ $hasTrailer = (bool) preg_match('/^[A-Za-z0-9_-]+\.mp4$/i', $trailerFile)
 </p>
 
 <div class="detail-meta">
-    <span class="pill">CBFC : <?php echo htmlspecialchars($movie['Certificate']); ?></span>
+    <span class="pill">Rating: <?php echo htmlspecialchars($movie['Certificate']); ?></span>
     <span>&middot;</span>
     <span><?php echo htmlspecialchars($movie['Genre']); ?></span>
     <span>&middot;</span>

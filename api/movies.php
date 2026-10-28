@@ -11,12 +11,15 @@ header("Cache-Control: no-store");
 
 require_once __DIR__ . '/../includes/db_connect.php';
 
+// Each showtime is a separate row in `movie`. Show every title only ONCE by
+// picking the earliest row per title (same approach as the PHP base version).
 $sql = "SELECT m.Movie_ID, m.Title, m.Genre, m.Duration_Min, m.Date, m.Showtime,
                m.Description, m.Certificate, m.Stars, m.Status, m.Poster, m.Backdrop,
                c.Cinema_Name, b.Bran_Location
         FROM movie m
         LEFT JOIN cinema c ON m.Cinema_ID = c.Cinema_ID
         LEFT JOIN branch b ON c.Bran_ID = b.Bran_ID
+        WHERE m.Movie_ID IN (SELECT MIN(Movie_ID) FROM movie GROUP BY Title)
         ORDER BY m.Date ASC, m.Showtime ASC";
 
 try {
