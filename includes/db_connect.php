@@ -2,10 +2,12 @@
 // CineBook uses Singapore-local cinema dates/times throughout the project.
 date_default_timezone_set('Asia/Singapore');
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
 $db_host = 'localhost';
 $db_user = 'root';
 $db_pass = '';
 $db_name = 'cinebook_db';
+
 try {
     $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
     $conn->set_charset('utf8mb4');
@@ -15,7 +17,7 @@ try {
     if (strpos($_SERVER['SCRIPT_NAME'] ?? '', '/api/') !== false) {
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
-        echo json_encode(['status'=>'error','message'=>'Movie service is temporarily unavailable.']);
+        echo json_encode(['status' => 'error', 'message' => 'Movie service is temporarily unavailable.']);
     } else {
         header('Content-Type: text/html; charset=utf-8');
         echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -26,17 +28,21 @@ try {
     }
     exit;
 }
+
+// Shared helpers (sessions, CSRF, auth, icons, poster helpers).
 require_once __DIR__ . '/functions.php';
+
 // Catch unexpected SQL failures on movie/search/ticket pages; log details server-side.
 set_exception_handler(static function (Throwable $e) {
     error_log('CineBook unhandled application error: ' . $e->getMessage());
     http_response_code(500);
     if (strpos($_SERVER['SCRIPT_NAME'] ?? '', '/api/') !== false) {
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['status'=>'error','message'=>'Service temporarily unavailable.']);
+        echo json_encode(['status' => 'error', 'message' => 'Service temporarily unavailable.']);
     } else {
         echo '<div class="error-msg" role="alert" style="max-width:700px;margin:32px auto;padding:24px;background:#251a16;color:#fff;">'
            . 'Sorry, something went wrong. Please try again later or return to <a href="index.php" style="color:#eebc4d;">CineBook home</a>.'
            . '</div>';
     }
 });
+?>

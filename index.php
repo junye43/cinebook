@@ -60,11 +60,11 @@ $coming = $conn->query(
 
                 <a href="movie_details.php?id=<?php echo $movie['Movie_ID']; ?>"
                 class="btn btn-ghost">
-                    ▶ View Details
+                    <?php echo icon('play',14); ?> View Details
                 </a>
                 
                 <a href="booking.php?movie_id=<?php echo $movie['Movie_ID']; ?>" class="book-now-btn">
-                    🎟 Book Now
+                    <?php echo icon('ticket',15); ?> Book Now
                 </a>
             </div>
         </div>
@@ -96,19 +96,19 @@ $coming = $conn->query(
             <a class="poster<?php echo poster_has_img($row['Poster']); ?>" data-genre="<?php echo htmlspecialchars($row['Genre']); ?>"<?php echo poster_style($row['Poster']); ?>
                href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>">
                 <?php echo cert_badge($row['Certificate']); ?>
-                <span class="dur-pill">&#9201; <?php echo formatDuration($row['Duration_Min']); ?></span>
+                <span class="dur-pill"><?php echo icon('clock',13); ?><?php echo formatDuration($row['Duration_Min']); ?></span>
             </a>
             <div class="movie-card-foot">
                 <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
                 <div class="mc-location"><?php echo htmlspecialchars($row['Cinema_Name']); ?></div>
                 <a href="booking.php?movie_id=<?php echo $row['Movie_ID']; ?>" class="book-now-btn">
-                    🎟 Book Now
+                    <?php echo icon('ticket',15); ?> Book Now
                 </a>
             </div>
         </div>
     <?php endforeach; ?>
 <?php else: ?>
-    <div class="empty-state"><div class="big">&#127909;</div><p>No movies showing right now. Please check back soon.</p></div>
+    <div class="empty-state"><div class="big"><?php echo icon('ticket',42); ?></div><p>No movies showing right now. Please check back soon.</p></div>
 <?php endif; ?>
 </div>
 
@@ -123,7 +123,7 @@ $coming = $conn->query(
             <a class="poster<?php echo poster_has_img($row['Poster']); ?>" data-genre="<?php echo htmlspecialchars($row['Genre']); ?>"<?php echo poster_style($row['Poster']); ?>
                href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>">
                 <?php echo cert_badge($row['Certificate']); ?>
-                <span class="dur-pill">&#9201; <?php echo formatDuration($row['Duration_Min']); ?></span>
+                <span class="dur-pill"><?php echo icon('clock',13); ?><?php echo formatDuration($row['Duration_Min']); ?></span>
             </a>
             <div class="movie-card-foot">
                 <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>

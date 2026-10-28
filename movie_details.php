@@ -93,7 +93,7 @@ $hasTrailer = (bool) preg_match('/^[A-Za-z0-9_-]+\.mp4$/i', $trailerFile)
 
         <?php if ($showtimes->num_rows > 0): ?>
         <p style="margin-top:26px;">
-            <a href="booking.php?movie_id=<?php echo $movie['Movie_ID']; ?>" class="btn">&#127903; Book Tickets</a>
+            <a href="booking.php?movie_id=<?php echo $movie['Movie_ID']; ?>" class="btn"><?php echo icon('ticket',15); ?> Book Tickets</a>
         </p>
         <?php else: ?><p class="hint">No future showtimes available. Please check back later.</p><?php endif; ?>
 <?php endif; ?>

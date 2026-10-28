@@ -1,9 +1,9 @@
 </main>
 <footer class="site-footer">
     <div class="footer-features">
-        <div class="feature-card"><span class="fico">&#127911;</span>24/7 CUSTOMER CARE</div>
-        <div class="feature-card"><span class="fico">&#127903;</span>RESEND BOOKING INFORMATION</div>
-        <div class="feature-card"><span class="fico">&#9993;</span>SUBSCRIBE TO THE NEWSLETTER</div>
+        <div class="feature-card"><span class="fico"><?php echo icon('headset',26); ?></span>24/7 CUSTOMER CARE</div>
+        <div class="feature-card"><span class="fico"><?php echo icon('ticket',26); ?></span>RESEND BOOKING INFORMATION</div>
+        <div class="feature-card"><span class="fico"><?php echo icon('mail',26); ?></span>SUBSCRIBE TO THE NEWSLETTER</div>
     </div>
 
     <div class="footer-main">

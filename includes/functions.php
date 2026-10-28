@@ -12,6 +12,29 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+/* ---------- Error resilience ---------- */
+/* Show a friendly page instead of a raw PHP/SQL crash. Real details go to the log. */
+function cinebook_error_page($message = "Something went wrong on our end. Please try again in a moment.") {
+    if (!headers_sent()) http_response_code(500);
+    $msg = htmlspecialchars($message);
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
+       . '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+       . '<title>Something went wrong | CineBook</title>'
+       . '<link rel="stylesheet" href="css/style.css"></head><body>'
+       . '<main class="page-wrap"><div class="form-panel" style="max-width:480px;text-align:center;">'
+       . '<h2>Oops!</h2>'
+       . '<p class="form-sub">' . $msg . '</p>'
+       . '<a href="index.php" class="btn btn-block">Back to Home</a>'
+       . '</div></main></body></html>';
+    exit;
+}
+
+/* Any uncaught exception (e.g. a database error) becomes a friendly page, not a stack trace. */
+set_exception_handler(function ($e) {
+    error_log("CineBook uncaught: " . $e->getMessage());
+    cinebook_error_page();
+});
+
 /* ---------- CSRF protection ---------- */
 function csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
@@ -119,4 +142,23 @@ function cert_badge($cert) {
 /** HTML-escape a text field from POST without throwing when malicious arrays are submitted. */
 function posted_value($key, $default = '') {
     return htmlspecialchars(is_string($_POST[$key] ?? null) ? $_POST[$key] : $default, ENT_QUOTES, 'UTF-8');
+}
+
+/* Inline SVG icon (replaces emoji). Returns an <svg> that inherits currentColor. */
+function icon($name, $size = 18) {
+    $s = (int) $size;
+    $head = '<svg class="ico" width="' . $s . '" height="' . $s . '" viewBox="0 0 24 24" aria-hidden="true"';
+    $stroke = $head . ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+    switch ($name) {
+        case 'search':  return $stroke . '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>';
+        case 'clock':   return $stroke . '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+        case 'headset': return $stroke . '<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M20 19a3 3 0 0 1-3 3h-3"/></svg>';
+        case 'mail':    return $stroke . '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7.5 12 13l8.5-5.5"/></svg>';
+        case 'refresh': return $stroke . '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>';
+        case 'sun':     return $stroke . '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+        case 'moon':    return $stroke . '<path d="M21 12.8A8 8 0 1 1 11.2 3 6 6 0 0 0 21 12.8z"/></svg>';
+        case 'play':    return $head . ' fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+        case 'ticket':  return $head . ' fill="currentColor"><path d="M4 6h16a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4V7a1 1 0 0 1 1-1z"/></svg>';
+        default:        return '';
+    }
 }

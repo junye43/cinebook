@@ -1,5 +1,8 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) session_start();
+// Ensure shared helpers (icon(), auth, CSRF, session, error handler) are available
+// even on pages that include the header before loading db_connect.
+require_once __DIR__ . '/functions.php';
+
 $currentPage = basename($_SERVER['PHP_SELF']);
 
 function navActive($page) {
@@ -28,7 +31,14 @@ function starRating($stars) {
 <title><?php echo isset($pageTitle) ? htmlspecialchars($pageTitle) . " | CineBook" : "CineBook"; ?></title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="CineBook — browse movie showtimes across our cinemas and book your seats online.">
-<link rel="stylesheet" href="css/style.css">
+<link rel="icon" type="image/png" href="images/cinebooklogo.png">
+<link rel="stylesheet" href="css/style.css?v=5">
+<script>
+/* Apply the saved theme before paint (prevents a flash of the wrong theme) */
+(function () {
+    try { if (localStorage.getItem('theme') === 'light') document.documentElement.setAttribute('data-theme', 'light'); } catch (e) {}
+})();
+</script>
 </head>
 <body>
 <header class="site-header">
@@ -52,10 +62,13 @@ function starRating($stars) {
             </ul>
         </nav>
         <form class="header-search" method="GET" action="movies.php" role="search">
-            <span class="ico">&#128269;</span>
+            <span class="ico-wrap"><?php echo icon('search', 16); ?></span>
             <input type="search" name="q" placeholder="Search movies…"
                    value="<?php echo htmlspecialchars(is_string($_GET['q'] ?? null) ? substr($_GET['q'],0,100) : ''); ?>">
         </form>
+        <button type="button" id="themeToggle" class="theme-toggle" title="Toggle light / dark mode" aria-label="Toggle light or dark mode">
+            <span class="ico-sun"><?php echo icon('sun', 18); ?></span><span class="ico-moon"><?php echo icon('moon', 18); ?></span>
+        </button>
     </div>
 </header>
 <main class="page-wrap">

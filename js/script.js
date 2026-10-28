@@ -46,6 +46,21 @@ window.showErrorBox = showErrorBox;
 
 document.addEventListener("DOMContentLoaded", function () {
 
+    // Light / dark theme toggle (persists in localStorage)
+    var themeToggle = document.getElementById("themeToggle");
+    if (themeToggle) {
+        themeToggle.addEventListener("click", function () {
+            var isLight = document.documentElement.getAttribute("data-theme") === "light";
+            if (isLight) {
+                document.documentElement.removeAttribute("data-theme");
+                try { localStorage.setItem("theme", "dark"); } catch (e) {}
+            } else {
+                document.documentElement.setAttribute("data-theme", "light");
+                try { localStorage.setItem("theme", "light"); } catch (e) {}
+            }
+        });
+    }
+
     // Clickable table rows (e.g. My Bookings → ticket view)
     document.querySelectorAll(".clickable-row").forEach(function (row) {
         row.addEventListener("click", function (e) {
