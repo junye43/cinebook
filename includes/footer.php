@@ -19,6 +19,7 @@
         <a href="movies.php">Movies</a>
         <a href="booking.php">Book Tickets</a>
         <a href="about.php">Theatres</a>
+        <a href="react/index.html" class="footer-react">Explore Movies (React)</a>
     </nav>
 
     <!-- Decorative social icons (inline SVG, no external links per project rules) -->

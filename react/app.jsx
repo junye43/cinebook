@@ -83,7 +83,7 @@ function Toolbar({ genres, query, setQuery, genre, setGenre, status, setStatus, 
       </div>
       <select className="r-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
         <option value="date">Sort: Date</option>
-        <option value="title">Sort: Title (A–Z)</option>
+        <option value="title">Sort: Title (A-Z)</option>
         <option value="stars">Sort: Rating</option>
         <option value="duration">Sort: Duration</option>
       </select>
@@ -136,7 +136,7 @@ function App() {
   return (
     <React.Fragment>
       <header className="r-header">
-        <a className="r-logo" href="../index.php">Cine<span>Book</span></a>
+        <a className="r-logo" href="../index.php"><img src="cinebooklogo.png" alt="CineBok" /></a>
         <span className="r-badge">React Edition · Additional Version</span>
         <a className="r-home" href="../index.php">← Back to main site</a>
       </header>
