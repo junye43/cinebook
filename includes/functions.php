@@ -152,13 +152,22 @@ function icon($name, $size = 18) {
     switch ($name) {
         case 'search':  return $stroke . '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>';
         case 'clock':   return $stroke . '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+        case 'calendar':return $stroke . '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>';
         case 'headset': return $stroke . '<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M20 19a3 3 0 0 1-3 3h-3"/></svg>';
         case 'mail':    return $stroke . '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7.5 12 13l8.5-5.5"/></svg>';
-        case 'refresh': return $stroke . '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>';
+        case 'edit':    return $stroke . '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+        case 'pin':     return $stroke . '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+        case 'phone':   return $stroke . '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>';
+        case 'film':    return $stroke . '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>';
         case 'sun':     return $stroke . '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
         case 'moon':    return $stroke . '<path d="M21 12.8A8 8 0 1 1 11.2 3 6 6 0 0 0 21 12.8z"/></svg>';
         case 'play':    return $head . ' fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
-        case 'ticket':  return $head . ' fill="currentColor"><path d="M4 6h16a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4V7a1 1 0 0 1 1-1z"/></svg>';
+        case 'ticket':  return $stroke . '<path d="M4 6h16a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4V7a1 1 0 0 1 1-1z"/><path d="M12 6.8v1.5M12 9.7v1.5M12 12.6v1.5M12 15.5v1.5"/></svg>';
+        // Brand marks — solid (filled) so the social row reads as one consistent set.
+        case 'instagram': return $head . ' fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9a5.5 5.5 0 0 1-5.5 5.5h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2zm4.5 5.6a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8zm0 1.9a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm5-2.2a1.15 1.15 0 1 0 0 2.3 1.15 1.15 0 0 0 0-2.3z"/></svg>';
+        case 'facebook':  return $head . ' fill="currentColor"><path d="M14 8.2V6.6c0-.7.5-.9.8-.9H16V3.1l-2.2-.1C11.2 3 10.6 5 10.6 6.3v1.9H8.6V11h2v10h3.3V11h2.3l.4-2.8H14z"/></svg>';
+        case 'x':         return $head . ' fill="currentColor"><path d="M18.9 2H22l-7.6 8.7L23 22h-6.8l-5.3-6.9L4.8 22H2l8.1-9.3L1.5 2H8.4l4.8 6.3L18.9 2zm-1.2 18h1.9L7.4 4H5.4z"/></svg>';
+        case 'youtube':   return $head . ' fill="currentColor"><path d="M23 7.5a3 3 0 0 0-2.1-2.1C19 5 12 5 12 5s-7 0-8.9.4A3 3 0 0 0 1 7.5 31 31 0 0 0 .7 12 31 31 0 0 0 1 16.5a3 3 0 0 0 2.1 2.1C5 19 12 19 12 19s7 0 8.9-.4a3 3 0 0 0 2.1-2.1A31 31 0 0 0 23.3 12 31 31 0 0 0 23 7.5zM10 15.3V8.7l5.7 3.3z"/></svg>';
         default:        return '';
     }
 }

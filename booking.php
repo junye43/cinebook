@@ -39,7 +39,7 @@ $moviesRows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 $bookMovie = null;
 if ($preselectMovie) {
-    $st = $conn->prepare("SELECT Title, Genre, Poster, Backdrop, Certificate FROM movie WHERE Movie_ID = ?");
+    $st = $conn->prepare("SELECT Title, Genre, Poster, Backdrop, Certificate, Duration_Min FROM movie WHERE Movie_ID = ?");
     $st->bind_param('i', $preselectMovie);
     $st->execute();
     $bookMovie = $st->get_result()->fetch_assoc();
@@ -51,18 +51,18 @@ $TICKET_PRICE = 12.50;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify()) $errors[] = 'Your session expired. Please submit the form again.';
 
-    $fullName = cb_post_text('full_name');
-    $email = cb_post_text('email');
-    $contact = cb_post_text('contact');
+    // Name, email and contact come from the logged-in account (no longer typed on the form).
+    $fullName = $prefillName;
+    $email    = $prefillEmail;
+    $contact  = $prefillContact;
     $movieId = cb_post_positive_int('movie_id');
     $numTickets = cb_post_positive_int('num_tickets');
     $seatsText = cb_post_text('seats');
     $paymentId = cb_post_positive_int('payment_type');
 
-    if ($fullName === '') $errors[] = 'Full name is required.';
-    elseif (strlen($fullName) > 100) $errors[] = 'Full name must be 100 characters or fewer.';
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 120) $errors[] = 'Please enter a valid email (maximum 120 characters).';
-    if (!preg_match('/^[0-9]{7,15}$/D', $contact)) $errors[] = 'Contact number must contain 7–15 digits.';
+    // Guard against an incomplete profile (data comes from the account, not user input).
+    if ($fullName === '') $errors[] = 'Your account has no name on file. Please update your profile before booking.';
+    if (!preg_match('/^[0-9]{7,15}$/D', (string) $contact)) $errors[] = 'Your account contact number is invalid. Please update it in your profile before booking.';
     if ($movieId <= 0) $errors[] = 'Please select a movie showtime.';
     if ($numTickets < 1 || $numTickets > 10) $errors[] = 'Number of tickets must be between 1 and 10.';
     $seatCheck = cb_validate_seats($seatsText, $numTickets);
@@ -158,21 +158,44 @@ foreach ($moviesRows as $m) { $byTitle[$m['Title']][] = $m; }
 
 // Which showtime is pre-selected (from ?movie_id, or a failed POST)
 $selectedId = $preselectMovie;
+// Only auto-select a specific time when the user actually picked one (a showtime
+// chip adds ?t=1). A generic card "Book Now" pre-selects the film only.
+$autoSelectTime = isset($_GET['t']);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['movie_id'])) {
     $selectedId = intval($_POST['movie_id']);
+    $autoSelectTime = true; // keep the chosen time after a failed submit
 }
 $preselectTitle = '';
 foreach ($moviesRows as $m) {
     if ($m['Movie_ID'] == $selectedId) { $preselectTitle = $m['Title']; break; }
 }
+// Fallback: the link may point at a past/representative showtime id (e.g. a card's
+// "Book Now"). If so, still pre-select the film by title so its upcoming times load.
+if ($preselectTitle === '' && $bookMovie && isset($byTitle[$bookMovie['Title']])) {
+    $preselectTitle = $bookMovie['Title'];
+}
 
 include 'includes/header.php';
 ?>
 
-<?php $bookBanner = $bookMovie ? backdrop_style($bookMovie['Backdrop']) : ''; ?>
-<?php if ($bookBanner !== ''): ?>
-    <div class="detail-banner has-img" data-genre="<?php echo htmlspecialchars($bookMovie['Genre']); ?>"<?php echo $bookBanner; ?>>
-        <span class="poster-title serif" style="font-size:1.7em;position:relative;z-index:2;">Now Booking &middot; <?php echo htmlspecialchars($bookMovie['Title']); ?></span>
+<?php if ($bookMovie): ?>
+    <div class="book-hero" data-genre="<?php echo htmlspecialchars($bookMovie['Genre']); ?>"<?php echo backdrop_style($bookMovie['Backdrop']); ?>>
+        <div class="book-hero-inner">
+            <?php if (poster_file($bookMovie['Poster'])): ?>
+                <span class="bh-poster"<?php echo poster_style($bookMovie['Poster']); ?>></span>
+            <?php endif; ?>
+            <div class="bh-text">
+                <span class="bh-eyebrow"><?php echo icon('ticket', 14); ?> Now Booking</span>
+                <h2 class="bh-title serif"><?php echo htmlspecialchars($bookMovie['Title']); ?></h2>
+                <div class="bh-meta">
+                    <?php echo cert_badge($bookMovie['Certificate']); ?>
+                    <span><?php echo htmlspecialchars($bookMovie['Genre']); ?></span>
+                    <?php if (!empty($bookMovie['Duration_Min'])): ?>
+                        <span>&middot; <?php echo formatDuration($bookMovie['Duration_Min']); ?></span>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
     </div>
 <?php else: ?>
     <img class="page-banner" src="images/ui/theatres-banner.png" alt="CineBook Cinemas - Book Tickets">
@@ -199,22 +222,19 @@ include 'includes/header.php';
 
     <!-- LEFT: customer + showtime details -->
     <div class="panel">
-        <h3>Your Details</h3>
-        <div class="form-group">
-            <label for="full_name">Full Name</label>
-            <input type="text" id="full_name" name="full_name" maxlength="100" required
-                   value="<?php echo htmlspecialchars($_SERVER['REQUEST_METHOD'] === 'POST' ? cb_post_text('full_name') : $prefillName); ?>">
-        </div>
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" maxlength="120" required
-                   value="<?php echo htmlspecialchars($_SERVER['REQUEST_METHOD'] === 'POST' ? cb_post_text('email') : $prefillEmail); ?>">
-        </div>
-        <div class="form-group">
-            <label for="contact">Contact Number</label>
-            <input type="tel" id="contact" name="contact" maxlength="15" pattern="[0-9]{7,15}" required
-                   placeholder="e.g. 91234567" value="<?php echo htmlspecialchars($_SERVER['REQUEST_METHOD'] === 'POST' ? cb_post_text('contact') : $prefillContact); ?>">
-            <div class="hint">7-15 digits, numbers only.</div>
+        <h3>Showtime &amp; Payment</h3>
+        <?php
+            $nameParts = preg_split('/\s+/', trim($prefillName)) ?: [];
+            $initials = strtoupper(substr($nameParts[0] ?? 'C', 0, 1) . (count($nameParts) > 1 ? substr(end($nameParts), 0, 1) : ''));
+        ?>
+        <div class="booking-as-card">
+            <span class="ba-avatar" aria-hidden="true"><?php echo htmlspecialchars($initials); ?></span>
+            <div class="ba-info">
+                <span class="ba-label">Booking as</span>
+                <span class="ba-name"><?php echo htmlspecialchars($prefillName); ?></span>
+                <span class="ba-meta"><?php echo htmlspecialchars($prefillEmail); ?> &middot; <?php echo htmlspecialchars($prefillContact); ?></span>
+            </div>
+            <a href="profile.php" class="ba-edit"><?php echo icon('edit', 14); ?> Edit</a>
         </div>
         <div class="form-group">
             <label for="movie_pick">Movie</label>
@@ -313,7 +333,7 @@ var sumQty   = document.getElementById("sumQty");
 var sumTotal = document.getElementById("sumTotal");
 var hintEl   = document.getElementById("seatHint");
 var moviePick = document.getElementById("movie_pick");
-var PRESELECT_ID = <?php echo (int) $selectedId; ?>;
+var PRESELECT_ID = <?php echo $autoSelectTime ? (int) $selectedId : 0; ?>;
 
 // Showtimes grouped by film title (escaped JSON, not quoted JavaScript).
 var showtimesByTitle = <?php
@@ -459,17 +479,11 @@ movieSelect.addEventListener("change", function () {
 
 // ---- Submit validation (client-side, before the form is sent) ----
 document.getElementById("bookingForm").addEventListener("submit", function (e) {
-    var contact = document.getElementById("contact").value.trim();
-    var fullName = document.getElementById("full_name").value.trim();
-    var email = document.getElementById("email").value.trim();
     var msg = "";
 
-    if (!fullName || fullName.length > 100) msg += "Full name must be 1–100 characters.\n";
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 120) msg += "Enter a valid email (maximum 120 characters).\n";
     if (!document.getElementById("payment_type").value) msg += "Please select a payment method.\n";
     if (!moviePick.value) msg += "Please select a movie.\n";
     else if (!movieSelect.value) msg += "Please select a showtime.\n";
-    if (!/^[0-9]{7,15}$/.test(contact)) msg += "Contact number must be 7-15 digits.\n";
     if (selected.length < 1) msg += "Please select at least one seat.\n";
     if (selected.length > MAX_SEATS) msg += "You can book a maximum of " + MAX_SEATS + " seats.\n";
     var ar = movieMinAge[movieSelect.value];

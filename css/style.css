@@ -507,6 +507,92 @@ a.mc-title:hover { color: var(--gold); }
     height: auto;
     display: block;
 }
+/* Booking page: compact "Now Booking" header card over a darkened backdrop */
+.book-hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 150px;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 22px;
+    background-size: cover;
+    background-position: center;
+    background-color: #0d0d0d;
+}
+.book-hero::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(8,8,8,0.94) 0%, rgba(8,8,8,0.80) 45%, rgba(8,8,8,0.45) 100%);
+}
+.book-hero-inner {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; gap: 18px;
+    padding: 20px 24px;
+}
+.bh-poster {
+    flex: 0 0 auto;
+    width: 66px; height: 96px;
+    border-radius: 8px;
+    background-size: cover; background-position: center;
+    background-color: #1a1a1a;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+}
+.bh-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bh-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--gold);
+}
+.bh-eyebrow .ico { width: 14px; height: 14px; }
+.bh-title { font-size: 1.7em; font-weight: 700; line-height: 1.1; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.7); }
+.bh-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--text-mid); font-size: 0.9em; }
+
+/* ---------- Popcorn rating (styled after the logo/favicon) ---------- */
+.popcorn-rating { display: inline-flex; gap: 2px; align-items: center; line-height: 1; }
+.popcorn-rating .pop { display: block; }
+.pop.empty { filter: grayscale(1) opacity(0.4); }
+/* "Booking as …" card that replaces the removed Name/Email/Contact inputs */
+.booking-as-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--gold-dim);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 13px;
+    margin: 0 0 20px;
+}
+.ba-avatar {
+    flex: 0 0 auto;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-weight: 700; font-size: 1em;
+    color: #1a1400;
+    background: linear-gradient(135deg, var(--gold-2), var(--gold));
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.ba-info { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.ba-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-mid); }
+.ba-name { font-weight: 700; color: var(--text); font-size: 1em; }
+.ba-meta { font-size: 0.8em; color: var(--text-mid); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ba-edit {
+    margin-left: auto; flex: 0 0 auto;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.82em; font-weight: 600; color: var(--gold);
+    border: 1px solid var(--gold); border-radius: 999px;
+    padding: 6px 13px;
+    transition: background var(--transition), color var(--transition);
+}
+.ba-edit:hover { background: var(--gold); color: #1a1400; }
+.ba-edit .ico { width: 14px; height: 14px; }
+@media (max-width: 620px) {
+    .bh-title { font-size: 1.3em; }
+    .bh-poster { width: 54px; height: 78px; }
+    .book-hero-inner { padding: 16px 18px; gap: 14px; }
+}
 .detail-banner[data-genre="Sci-Fi"]  { background: linear-gradient(150deg, #1a2a5c, #0a0e1c); }
 .detail-banner[data-genre="Drama"]   { background: linear-gradient(150deg, #4a2452, #140816); }
 .detail-banner[data-genre="Action"]  { background: linear-gradient(150deg, #6a1f2f, #180608); }
@@ -515,11 +601,27 @@ a.mc-title:hover { color: var(--gold); }
 .stars-inline { color: var(--gold); letter-spacing: 2px; }
 .detail-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: var(--muted); font-size: 0.9em; margin: 10px 0 18px; }
 .detail-meta .pill { border: 1px solid var(--border-2); padding: 3px 10px; border-radius: 5px; color: var(--text-mid); }
-.detail-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 34px; }
-.detail-facts { line-height: 2; color: var(--text-mid); margin-top: 14px; }
-.detail-facts strong { color: var(--text); }
-.about-title { font-family: var(--serif); color: var(--muted); font-size: 0.95em; margin-bottom: 8px; }
-.showtime-list { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.detail-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 34px; align-items: start; }
+
+/* Movie-details info cards */
+.detail-sub { font-family: var(--serif); font-size: 1.18em; font-weight: 700; margin: 0 0 14px; }
+.detail-note { color: var(--text-mid); line-height: 1.7; margin: 10px 0 0; }
+.info-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; padding: 4px 18px; }
+.info-row { display: flex; gap: 14px; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border); }
+.info-row:last-child { border-bottom: none; }
+.info-ic { flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; background: var(--gold-dim); color: var(--gold); display: inline-flex; align-items: center; justify-content: center; }
+.info-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.info-k { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.info-v { color: var(--text); font-size: 0.97em; }
+.about-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; }
+.about-body { color: var(--text-mid); line-height: 1.78; margin: 0; }
+
+/* Showtimes grouped by day */
+.showtime-days { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+.showtime-day { border-left: 2px solid var(--gold-dim); padding-left: 14px; }
+.std-date { display: flex; align-items: center; gap: 7px; font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 9px; }
+.std-date .ico { color: var(--gold); }
+.std-times { display: flex; gap: 10px; flex-wrap: wrap; }
 .showtime-chip {
     background: var(--bg-3);
     border: 1px solid var(--border-2);
@@ -627,6 +729,46 @@ a.mc-title:hover { color: var(--gold); }
 .summary-row .val { color: var(--gold); font-weight: 700; }
 
 /* ---------- Tables ---------- */
+/* ---------- About / Theatres page ---------- */
+.about-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 34px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.about-intro { margin: 0; color: var(--text-mid); line-height: 1.8; font-size: 1.04em; }
+.about-features { display: flex; flex-direction: column; gap: 14px; }
+.about-feat {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    transition: border-color var(--transition), transform var(--transition);
+}
+.about-feat:hover { border-color: var(--gold); transform: translateX(3px); }
+.about-feat .af-ico {
+    flex: 0 0 auto;
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--gold-dim); color: var(--gold);
+}
+.about-feat h3 { font-family: var(--serif); font-size: 1.05em; margin-bottom: 4px; }
+.about-feat p { font-size: 0.85em; color: var(--text-mid); line-height: 1.5; }
+
+@media (max-width: 860px) { .about-grid { grid-template-columns: 1fr; gap: 24px; } }
+
+.section-sub { color: var(--text-mid); margin: -10px 0 18px; font-size: 0.95em; }
+
+/* Branch table cell adornments */
+.cell-ic { display: inline-flex; align-items: center; gap: 9px; }
+.cell-ic .ico { color: var(--gold); flex: 0 0 auto; }
+.branches-table .cinema-name { font-weight: 600; color: var(--text); }
+
 .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
 table.data-table { width: 100%; border-collapse: collapse; background: var(--bg-2); min-width: 560px; }
 table.data-table th, table.data-table td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border); }
@@ -681,7 +823,6 @@ table.data-table tbody tr:last-child td { border-bottom: none; }
     width: 100%;
     height: auto;
     border-radius: var(--radius);
-    border: 1px solid var(--border);
     margin-bottom: 26px;
 }
 .form-panel .page-banner { margin-bottom: 22px; }
@@ -846,7 +987,6 @@ table.data-table tbody tr:last-child td { border-bottom: none; }
     display: block;
     border-radius: 16px;
     object-fit: cover;
-    border: 1px solid var(--border);
 }
 
 /* ==========================
@@ -988,6 +1128,5 @@ table.data-table tbody tr:last-child td { border-bottom: none; }
     height: auto;
     display: block;
     border-radius: 16px;
-    border: 1px solid var(--border);
     margin-bottom: 28px;
 }

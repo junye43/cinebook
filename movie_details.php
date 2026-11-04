@@ -45,7 +45,9 @@ $hasTrailer = (bool) preg_match('/^[A-Za-z0-9_-]+\.mp4$/i', $trailerFile)
         class="detail-banner-img">
 </div>
 
-<div class="stars-inline"><?php echo starRating($movie['Stars']); ?></div>
+<?php if ($movie['Status'] !== 'coming' && (int) $movie['Stars'] > 0): ?>
+<div class="stars-inline"><?php echo popcornRating($movie['Stars']); ?></div>
+<?php endif; ?>
 <h1 class="detail-title"><?php echo htmlspecialchars($movie['Title']); ?></h1>
 <p style="color:var(--gold);font-size:0.9em;">
     <?php echo $movie['Status'] === 'coming' ? 'Opens on ' : 'Showing from '; ?><?php echo date("d M Y", strtotime($movie['Date'])); ?>
@@ -69,39 +71,72 @@ $hasTrailer = (bool) preg_match('/^[A-Za-z0-9_-]+\.mp4$/i', $trailerFile)
 
 <div class="detail-grid">
     <div>
-        <p class="detail-facts">
-            <strong>Cinema:</strong><?php echo htmlspecialchars($movie['Cinema_Name']); ?>(<?php echo htmlspecialchars($movie['Bran_Location']); ?>)<br>
-            <?php if ($movie['Status'] !== 'coming'): ?><strong>Hall / Location:</strong><?php echo htmlspecialchars($movie['Location']); ?><br>
-            <?php endif; ?><strong>Contact:</strong><?php echo htmlspecialchars($movie['Cinema_Cont']); ?>
-        </p>
+        <div class="info-card">
+            <div class="info-row">
+                <span class="info-ic"><?php echo icon('film',18); ?></span>
+                <div class="info-text">
+                    <span class="info-k">Cinema</span>
+                    <span class="info-v"><?php echo htmlspecialchars($movie['Cinema_Name']); ?> &middot; <?php echo htmlspecialchars($movie['Bran_Location']); ?></span>
+                </div>
+            </div>
+            <?php if ($movie['Status'] !== 'coming'): ?>
+            <div class="info-row">
+                <span class="info-ic"><?php echo icon('pin',18); ?></span>
+                <div class="info-text">
+                    <span class="info-k">Hall / Location</span>
+                    <span class="info-v"><?php echo htmlspecialchars($movie['Location']); ?></span>
+                </div>
+            </div>
+            <?php endif; ?>
+            <div class="info-row">
+                <span class="info-ic"><?php echo icon('phone',18); ?></span>
+                <div class="info-text">
+                    <span class="info-k">Contact</span>
+                    <span class="info-v"><?php echo htmlspecialchars($movie['Cinema_Cont']); ?></span>
+                </div>
+            </div>
+        </div>
 
 <?php if ($movie['Status'] === 'coming'): ?>
-        <h3 style="margin-top:22px;font-size:1.15em;">Coming Soon</h3>
-        <p class="detail-facts">This film opens on <strong><?php echo date("d M Y", strtotime($movie['Date'])); ?></strong>. Showtimes aren't open for booking yet — check back closer to the release date.</p>
-        <p style="margin-top:22px;">
+        <h3 class="detail-sub" style="margin-top:28px;">Coming Soon</h3>
+        <p class="detail-note">This film opens on <strong><?php echo date("d M Y", strtotime($movie['Date'])); ?></strong>. Showtimes aren't open for booking yet — check back closer to the release date.</p>
+        <p style="margin-top:20px;">
             <a href="movies.php" class="btn btn-ghost">Browse Now Showing</a>
         </p>
 <?php else: ?>
-        <h3 style="margin-top:22px;font-size:1.15em;">Available Showtimes</h3>
-        <div class="showtime-list">
-            <?php while ($s = $showtimes->fetch_assoc()): ?>
-                <a class="showtime-chip" href="booking.php?movie_id=<?php echo $s['Movie_ID']; ?>">
-                    <?php echo date("d M Y", strtotime($s['Date'])); ?> &middot; <?php echo date("g:i A", strtotime($s['Showtime'])); ?>
-                </a>
-            <?php endwhile; ?>
+        <h3 class="detail-sub" style="margin-top:28px;">Available Showtimes</h3>
+        <?php
+        // Group upcoming showtimes by date so they are easy to scan.
+        $byDate = [];
+        while ($s = $showtimes->fetch_assoc()) {
+            $byDate[$s['Date']][] = $s;
+        }
+        $firstSlot = null;
+        foreach ($byDate as $slots) { $firstSlot = $slots[0]['Movie_ID']; break; }
+        ?>
+        <?php if ($byDate): ?>
+        <div class="showtime-days">
+            <?php foreach ($byDate as $date => $slots): ?>
+            <div class="showtime-day">
+                <div class="std-date"><?php echo icon('calendar', 14); ?> <?php echo date("D, j M Y", strtotime($date)); ?></div>
+                <div class="std-times">
+                    <?php foreach ($slots as $s): ?>
+                    <a class="showtime-chip" href="booking.php?movie_id=<?php echo $s['Movie_ID']; ?>&t=1"><?php echo date("g:i A", strtotime($s['Showtime'])); ?></a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
         </div>
-
-        <?php if ($showtimes->num_rows > 0): ?>
-        <p style="margin-top:26px;">
-            <a href="booking.php?movie_id=<?php echo $movie['Movie_ID']; ?>" class="btn"><?php echo icon('ticket',15); ?> Book Tickets</a>
+        <p style="margin-top:24px;">
+            <a href="booking.php?movie_id=<?php echo $firstSlot; ?>" class="btn"><?php echo icon('ticket',15); ?> Book Tickets</a>
         </p>
-        <?php else: ?><p class="hint">No future showtimes available. Please check back later.</p><?php endif; ?>
+        <?php else: ?><p class="detail-note">No future showtimes available. Please check back later.</p><?php endif; ?>
 <?php endif; ?>
     </div>
 
-    <div>
-        <p class="about-title">About the movie</p>
-        <p style="color:var(--text-mid);"><?php echo nl2br(htmlspecialchars($movie['Description'])); ?></p>
+    <div class="about-card">
+        <h3 class="detail-sub">About the movie</h3>
+        <p class="about-body"><?php echo nl2br(htmlspecialchars($movie['Description'])); ?></p>
     </div>
 </div>
 

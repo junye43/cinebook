@@ -36,9 +36,9 @@ $coming = $conn->query(
          <?php echo backdrop_style($movie['Backdrop']); ?>>
         <div class="hero-content">
 
-            <div class="hero-stars">
-                <?php echo starRating($movie['Stars']); ?>
-            </div>
+            <?php if ($rating = popcornRating($movie['Stars'])): ?>
+            <div class="hero-stars"><?php echo $rating; ?></div>
+            <?php endif; ?>
 
             <h1 class="hero-title">
                 <?php echo htmlspecialchars($movie['Title']); ?>

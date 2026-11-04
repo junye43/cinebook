@@ -53,7 +53,7 @@ $result = $stmt->get_result();
 <div class="movie-grid">
 <?php if ($result && $result->num_rows > 0): ?>
     <?php while ($row = $result->fetch_assoc()): ?>
-        <div class="movie-card">
+        <div class="movie-card" data-title="<?php echo htmlspecialchars($row['Title']); ?>">
             <a class="poster<?php echo poster_has_img($row['Poster']); ?>" data-genre="<?php echo htmlspecialchars($row['Genre']); ?>"<?php echo poster_style($row['Poster']); ?>
                href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>">
                 <?php echo cert_badge($row['Certificate']); ?>
@@ -76,5 +76,47 @@ $result = $stmt->get_result();
     <div class="empty-state"><div class="big"><?php echo icon('search',42); ?></div><p>No movies found<?php echo $q !== '' ? ' for “' . htmlspecialchars($q) . '”' : ''; ?>. <a href="movies.php" style="color:var(--gold);">Clear filters</a>.</p></div>
 <?php endif; ?>
 </div>
+
+<script>
+/* ============================================================
+   Search-as-you-type (pure JavaScript — no AJAX/JSON).
+   Filters the movie cards already rendered on the page as the
+   user types. The server-side SQL search still works with JS off.
+   ============================================================ */
+(function () {
+    var input = document.querySelector('.toolbar input[name="q"]');
+    var grid  = document.querySelector('.movie-grid');
+    if (!input || !grid) return;
+
+    var cards = Array.prototype.slice.call(grid.querySelectorAll('.movie-card'));
+    if (!cards.length) return;
+
+    // "No match" message shown only while live-filtering
+    var empty = document.createElement('div');
+    empty.className = 'empty-state live-empty';
+    empty.style.display = 'none';
+    empty.innerHTML = '<p>No movies match your search.</p>';
+    grid.parentNode.insertBefore(empty, grid.nextSibling);
+
+    function norm(s) { return (s || '').toLowerCase().trim(); }
+
+    function filter() {
+        var q = norm(input.value), shown = 0;
+        cards.forEach(function (card) {
+            var hit = norm(card.getAttribute('data-title')).indexOf(q) !== -1;
+            card.style.display = hit ? '' : 'none';
+            if (hit) shown++;
+        });
+        empty.style.display = shown === 0 ? 'block' : 'none';
+    }
+
+    input.addEventListener('input', filter);
+    // With JS on, don't reload the page — just filter instantly.
+    var form = input.closest('form');
+    if (form) form.addEventListener('submit', function (e) { e.preventDefault(); filter(); });
+
+    filter(); // apply immediately (covers a pre-filled ?q)
+})();
+</script>
 
 <?php include 'includes/footer.php'; $conn->close(); ?>

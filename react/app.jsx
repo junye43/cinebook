@@ -28,7 +28,53 @@ function formatDuration(min) {
   const h = Math.floor(min / 60), m = min % 60;
   return (h ? h + "h " : "") + m + "m";
 }
-function stars(n) { return "★".repeat(n) + "☆".repeat(5 - n); }
+/* ---- Inline SVG icons (match the base-site icon set) ---- */
+function Icon({ name, size = 16 }) {
+  const common = {
+    width: size, height: size, viewBox: "0 0 24 24", className: "r-ico", "aria-hidden": true,
+    fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round"
+  };
+  switch (name) {
+    case "search":
+      return <svg {...common}><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.6" y2="16.6" /></svg>;
+    case "clock":
+      return <svg {...common}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>;
+    case "ticket":
+      return <svg {...common}><path d="M4 6h16a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4V7a1 1 0 0 1 1-1z" /><path d="M12 6.8v1.5M12 9.7v1.5M12 12.6v1.5M12 15.5v1.5" /></svg>;
+    default:
+      return null;
+  }
+}
+
+/* ---- Popcorn rating (same flat popcorn as the base site) ---- */
+function Popcorn({ filled }) {
+  return (
+    <svg className={"r-pop" + (filled ? "" : " empty")} viewBox="0 0 36 36" aria-hidden="true">
+      <path fill="#EA3943" d="M6.5 13h23l-1.9 18.1a1.5 1.5 0 0 1-1.49 1.35H9.89a1.5 1.5 0 0 1-1.49-1.35L6.5 13z" />
+      <path fill="#fff" d="M9.8 13h3.27l.86 18.45h-2.6zM16.36 13h3.28l-.28 18.45h-2.72zM22.93 13h3.27l-1.4 18.45h-2.6z" />
+      <g fill="#F8C517">
+        <path d="M6.6 13.4C4.6 8.4 8.4 4 11.6 4.6 12.8 1.8 15.4 1 18 1s4.6.8 5.8 3.6C27 4 30.8 8.4 28.8 13.4z" />
+        <circle cx="9.2" cy="12.4" r="3.1" /><circle cx="26.8" cy="12.6" r="3" />
+        <circle cx="12" cy="9.6" r="3.5" /><circle cx="16" cy="6.5" r="3.9" />
+        <circle cx="20.6" cy="6.3" r="3.8" /><circle cx="24.4" cy="9.4" r="3.3" />
+        <circle cx="14.6" cy="9" r="3.1" /><circle cx="18.6" cy="9.6" r="3.3" />
+        <circle cx="22.2" cy="9.4" r="3.1" />
+      </g>
+      <g fill="none" stroke="#E2941B" strokeWidth="1.3" strokeLinecap="round">
+        <path d="M12.4 9c.7-.5 1.4-.2 1.5.6" /><path d="M18.2 6.4c.8-.4 1.5 0 1.5.9" /><path d="M22.5 9.2c.7-.5 1.5-.2 1.6.6" />
+      </g>
+    </svg>
+  );
+}
+function PopcornRating({ n }) {
+  n = Math.max(0, Math.min(5, n | 0));
+  if (n <= 0) return null;
+  return (
+    <span className="r-rating" title={n + " / 5"} aria-label={"Rated " + n + " out of 5"}>
+      {[1, 2, 3, 4, 5].map((i) => <Popcorn key={i} filled={i <= n} />)}
+    </span>
+  );
+}
 
 /* ---- Movie card ---- */
 function MovieCard({ movie }) {
@@ -41,8 +87,8 @@ function MovieCard({ movie }) {
       <a className={"r-poster" + (movie.poster ? " has-img" : "")}
          data-genre={movie.genre} style={posterStyle}
          href={coming ? `../movie_details.php?id=${movie.id}` : `../booking.php?movie_id=${movie.id}`}>
-        <span className="r-star">{stars(movie.stars)}</span>
-        <span className="r-dur">⏱ {formatDuration(movie.duration)}</span>
+        {!coming && movie.stars > 0 && <PopcornRating n={movie.stars} />}
+        <span className="r-dur"><Icon name="clock" size={12} /> {formatDuration(movie.duration)}</span>
         {coming && <span className="r-soon">COMING SOON</span>}
       </a>
       <div className="r-card-body">
@@ -56,7 +102,7 @@ function MovieCard({ movie }) {
         <div className="r-actions">
           {coming
             ? <a className="r-btn ghost" href={`../movie_details.php?id=${movie.id}`}>Details</a>
-            : <a className="r-btn" href={`../booking.php?movie_id=${movie.id}`}>🎟 Book</a>}
+            : <a className="r-btn" href={`../booking.php?movie_id=${movie.id}`}><Icon name="ticket" size={14} /> Book</a>}
         </div>
       </div>
     </article>
@@ -67,8 +113,11 @@ function MovieCard({ movie }) {
 function Toolbar({ genres, query, setQuery, genre, setGenre, status, setStatus, sort, setSort }) {
   return (
     <div className="r-toolbar">
-      <input className="r-search" type="search" placeholder="🔍  Search movies by title…"
-             value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="r-search-wrap">
+        <Icon name="search" size={16} />
+        <input className="r-search" type="search" placeholder="Search movies by title…"
+               value={query} onChange={(e) => setQuery(e.target.value)} />
+      </div>
       <div className="r-tabs">
         {["all", "showing", "coming"].map((s) => (
           <button key={s} className={"r-tab" + (status === s ? " active" : "")} onClick={() => setStatus(s)}>
