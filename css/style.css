@@ -492,6 +492,12 @@ a.mc-title:hover { color: var(--gold); }
     font-family: inherit;
 }
 .toolbar select:focus, .toolbar input:focus { outline: none; border-color: var(--gold); }
+.toolbar { align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 5px; }
+.filter-group.grow { flex: 1 1 200px; min-width: 180px; }
+.filter-group > label { color: var(--muted); font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.07em; }
+.search-row { display: flex; gap: 8px; }
+.search-row input[type="search"] { flex: 1; min-width: 0; }
 
 /* ---------- Movie detail ---------- */
 .detail-banner {
@@ -617,6 +623,13 @@ a.mc-title:hover { color: var(--gold); }
 .about-body { color: var(--text-mid); line-height: 1.78; margin: 0; }
 
 /* Showtimes grouped by day */
+.showtime-locs { display: flex; flex-direction: column; gap: 22px; margin-top: 16px; }
+.showtime-loc { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.stl-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.stl-head .ico { color: var(--gold); }
+.stl-name { font-weight: 700; font-size: 1.02em; }
+.stl-cinema { color: var(--muted); font-size: 0.82em; }
+.showtime-loc .showtime-days { margin-top: 10px; gap: 14px; }
 .showtime-days { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
 .showtime-day { border-left: 2px solid var(--gold-dim); padding-left: 14px; }
 .std-date { display: flex; align-items: center; gap: 7px; font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 9px; }

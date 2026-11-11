@@ -61,7 +61,7 @@ function popcornRating($n) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="CineBook — browse movie showtimes across our cinemas and book your seats online.">
 <link rel="icon" type="image/png" href="images/cinebooklogo.png">
-<link rel="stylesheet" href="css/style.css?v=20">
+<link rel="stylesheet" href="css/style.css?v=21">
 <script>
 /* Apply the saved theme before paint (prevents a flash of the wrong theme) */
 (function () {

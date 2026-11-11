@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# Microsoft Office temp / lock files
+~$*
+*.tmp
+
+# Report / documentation deliverables (kept outside the code repo)
+*.docx
+*.pdf

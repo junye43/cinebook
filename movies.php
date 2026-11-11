@@ -3,52 +3,89 @@ $pageTitle = "Movies";
 require_once 'includes/db_connect.php';
 include 'includes/header.php';
 
-$cinemaFilter = isset($_GET['cinema']) && is_scalar($_GET['cinema']) && ctype_digit((string)$_GET['cinema']) ? (int)$_GET['cinema'] : 0;
+// Location (outlet/branch), genre and title filters.
+$locFilter = ctype_digit((string)($_GET['loc'] ?? '')) ? (int)$_GET['loc'] : 0;
+$genre = is_string($_GET['genre'] ?? null) ? substr(trim($_GET['genre']), 0, 40) : '';
 $q = is_string($_GET['q'] ?? null) ? trim($_GET['q']) : '';
 $q = substr($q, 0, 100);
 
-$cinemas = $conn->query("SELECT Cinema_ID, Cinema_Name FROM cinema ORDER BY Cinema_Name");
+$locations = $conn->query("SELECT Bran_ID, Bran_Location FROM branch ORDER BY Bran_Location");
+$genreList = $conn->query("SELECT DISTINCT Genre FROM movie WHERE Genre IS NOT NULL AND Genre <> '' ORDER BY Genre");
 
-// Build a filtered query with a prepared statement (SELECT + search + filter)
-$sql = "SELECT m.Movie_ID, m.Title, m.Genre, m.Duration_Min, m.Date, m.Showtime,
-               m.Certificate, m.Stars, m.Status, m.Poster, c.Cinema_Name
-        FROM movie m LEFT JOIN cinema c ON m.Cinema_ID = c.Cinema_ID
-        WHERE m.Movie_ID IN (SELECT MIN(Movie_ID) FROM movie GROUP BY Title)";
+// One representative row per title, honouring the active filters so the chosen
+// outlet/genre decides which show stands in for each title.
+$inner = "SELECT MIN(m2.Movie_ID) FROM movie m2
+          LEFT JOIN cinema c2 ON m2.Cinema_ID = c2.Cinema_ID
+          WHERE 1=1";
 $params = [];
 $types = "";
-if ($q !== '') { $sql .= " AND m.Title LIKE ?"; $params[] = "%$q%"; $types .= "s"; }
-if ($cinemaFilter > 0) { $sql .= " AND m.Cinema_ID = ?"; $params[] = $cinemaFilter; $types .= "i"; }
-$sql .= " ORDER BY m.Date ASC, m.Showtime ASC";
+if ($q !== '')      { $inner .= " AND m2.Title LIKE ?"; $params[] = "%$q%";     $types .= "s"; }
+if ($genre !== '')  { $inner .= " AND m2.Genre = ?";    $params[] = $genre;      $types .= "s"; }
+if ($locFilter > 0) { $inner .= " AND c2.Bran_ID = ?";  $params[] = $locFilter;  $types .= "i"; }
+$inner .= " GROUP BY m2.Title";
+
+$sql = "SELECT m.Movie_ID, m.Title, m.Genre, m.Duration_Min, m.Date, m.Showtime,
+               m.Certificate, m.Stars, m.Status, m.Poster, c.Cinema_Name, b.Bran_Location
+        FROM movie m
+        LEFT JOIN cinema c ON m.Cinema_ID = c.Cinema_ID
+        LEFT JOIN branch b ON c.Bran_ID = b.Bran_ID
+        WHERE m.Movie_ID IN ($inner)
+        ORDER BY m.Date ASC, m.Showtime ASC";
 
 $stmt = $conn->prepare($sql);
 if ($types !== "") $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $result = $stmt->get_result();
+
+// Friendly name of the selected outlet, for the heading.
+$locName = '';
+if ($locFilter > 0) {
+    $ls = $conn->prepare("SELECT Bran_Location FROM branch WHERE Bran_ID = ?");
+    $ls->bind_param('i', $locFilter);
+    $ls->execute();
+    $locName = (string) ($ls->get_result()->fetch_assoc()['Bran_Location'] ?? '');
+}
 ?>
 
 <div class="section-head">
-    <h2><?php echo $q !== '' ? 'Results for “' . htmlspecialchars($q) . '”' : 'All Movies &amp; Showtimes'; ?></h2>
+    <h2><?php
+        if ($q !== '') echo 'Results for “' . htmlspecialchars($q) . '”';
+        elseif ($locName !== '') echo 'Now Playing at ' . htmlspecialchars($locName);
+        else echo 'All Movies &amp; Showtimes';
+    ?></h2>
 </div>
 
-<div class="toolbar">
-    <form method="GET" action="movies.php">
-        <?php if ($q !== ''): ?><input type="hidden" name="q" value="<?php echo htmlspecialchars($q); ?>"><?php endif; ?>
-        <label for="cinema">Cinema:</label>
-        <select name="cinema" id="cinema" onchange="this.form.submit()">
-            <option value="0">All Cinemas</option>
-            <?php while ($c = $cinemas->fetch_assoc()): ?>
-                <option value="<?php echo $c['Cinema_ID']; ?>" <?php echo ($cinemaFilter == $c['Cinema_ID']) ? 'selected' : ''; ?>>
-                    <?php echo htmlspecialchars($c['Cinema_Name']); ?>
+<form class="toolbar" method="GET" action="movies.php" role="search">
+    <div class="filter-group">
+        <label for="loc">Location</label>
+        <select name="loc" id="loc" onchange="this.form.submit()">
+            <option value="0">All Locations</option>
+            <?php while ($b = $locations->fetch_assoc()): ?>
+                <option value="<?php echo $b['Bran_ID']; ?>" <?php echo ($locFilter == $b['Bran_ID']) ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars($b['Bran_Location']); ?>
                 </option>
             <?php endwhile; ?>
         </select>
-    </form>
-    <form method="GET" action="movies.php">
-        <input type="search" name="q" placeholder="Search by title…" value="<?php echo htmlspecialchars($q); ?>">
-        <?php if ($cinemaFilter > 0): ?><input type="hidden" name="cinema" value="<?php echo $cinemaFilter; ?>"><?php endif; ?>
-        <button type="submit" class="btn btn-sm">Search</button>
-    </form>
-</div>
+    </div>
+    <div class="filter-group">
+        <label for="genre">Genre</label>
+        <select name="genre" id="genre" onchange="this.form.submit()">
+            <option value="">All Genres</option>
+            <?php while ($g = $genreList->fetch_assoc()): ?>
+                <option value="<?php echo htmlspecialchars($g['Genre']); ?>" <?php echo ($genre === $g['Genre']) ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars($g['Genre']); ?>
+                </option>
+            <?php endwhile; ?>
+        </select>
+    </div>
+    <div class="filter-group grow">
+        <label for="q">Search</label>
+        <div class="search-row">
+            <input type="search" name="q" id="q" placeholder="Search by title…" value="<?php echo htmlspecialchars($q); ?>">
+            <button type="submit" class="btn btn-sm">Search</button>
+        </div>
+    </div>
+</form>
 
 <div class="movie-grid">
 <?php if ($result && $result->num_rows > 0): ?>
@@ -61,7 +98,11 @@ $result = $stmt->get_result();
             </a>
             <div class="movie-card-foot">
                 <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
-                <div class="mc-location"><?php echo htmlspecialchars($row['Cinema_Name']); ?> &middot; <?php echo date("d M Y", strtotime($row['Date'])); ?></div>
+                <div class="mc-location"><?php
+                    echo htmlspecialchars($locFilter > 0 ? $row['Bran_Location'] : $row['Genre']);
+                    echo ' &middot; ';
+                    echo $row['Status'] === 'coming' ? 'Opens ' . date("d M", strtotime($row['Date'])) : date("d M Y", strtotime($row['Date']));
+                ?></div>
                 <?php if ($row['Status'] === 'coming'): ?>
                     <a href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>" class="btn btn-sm btn-ghost">Details</a>
                 <?php else: ?>
@@ -110,10 +151,10 @@ $result = $stmt->get_result();
         empty.style.display = shown === 0 ? 'block' : 'none';
     }
 
+    // Live filter as the user types (instant, client-side). The Search button
+    // and the Location/Genre dropdowns still submit normally for a server query
+    // (so it also works with JavaScript off, and the dropdowns can reload).
     input.addEventListener('input', filter);
-    // With JS on, don't reload the page — just filter instantly.
-    var form = input.closest('form');
-    if (form) form.addEventListener('submit', function (e) { e.preventDefault(); filter(); });
 
     filter(); // apply immediately (covers a pre-filled ?q)
 })();

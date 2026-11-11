@@ -100,7 +100,7 @@ $coming = $conn->query(
             </a>
             <div class="movie-card-foot">
                 <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
-                <div class="mc-location"><?php echo htmlspecialchars($row['Cinema_Name']); ?></div>
+                <div class="mc-location"><?php echo htmlspecialchars($row['Genre']); ?></div>
                 <a href="booking.php?movie_id=<?php echo $row['Movie_ID']; ?>" class="book-now-btn">
                     <?php echo icon('ticket',15); ?> Book Now
                 </a>
@@ -127,7 +127,7 @@ $coming = $conn->query(
             </a>
             <div class="movie-card-foot">
                 <a class="mc-title" href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>"><?php echo htmlspecialchars($row['Title']); ?></a>
-                <div class="mc-location"><?php echo htmlspecialchars($row['Cinema_Name']); ?> &middot; Opens <?php echo date("d M", strtotime($row['Date'])); ?></div>
+                <div class="mc-location"><?php echo htmlspecialchars($row['Genre']); ?> &middot; Opens <?php echo date("d M", strtotime($row['Date'])); ?></div>
                 <a href="movie_details.php?id=<?php echo $row['Movie_ID']; ?>" class="btn btn-sm btn-ghost">Details</a>
             </div>
         </div>

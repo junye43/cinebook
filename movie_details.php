@@ -21,11 +21,15 @@ if (!$movie) {
     exit;
 }
 
-// Other showtimes of the same title (server-generated related listing)
-$stmt2 = $conn->prepare("SELECT Movie_ID, Date, Showtime FROM movie
-                         WHERE Title = ? AND Status = 'showing'
-                           AND TIMESTAMP(Date, Showtime) > ?
-                         ORDER BY Date, Showtime");
+// Other showtimes of the same title across every outlet (server-generated listing)
+$stmt2 = $conn->prepare("SELECT m.Movie_ID, m.Date, m.Showtime, m.Location AS Hall,
+                                c.Cinema_Name, b.Bran_Location
+                         FROM movie m
+                         LEFT JOIN cinema c ON m.Cinema_ID = c.Cinema_ID
+                         LEFT JOIN branch b ON c.Bran_ID = b.Bran_ID
+                         WHERE m.Title = ? AND m.Status = 'showing'
+                           AND TIMESTAMP(m.Date, m.Showtime) > ?
+                         ORDER BY b.Bran_Location, m.Date, m.Showtime");
 $now = (new DateTimeImmutable('now', new DateTimeZone('Asia/Singapore')))->format('Y-m-d H:i:s');
 $stmt2->bind_param("ss", $movie['Title'], $now);
 $stmt2->execute();
@@ -79,15 +83,6 @@ $hasTrailer = (bool) preg_match('/^[A-Za-z0-9_-]+\.mp4$/i', $trailerFile)
                     <span class="info-v"><?php echo htmlspecialchars($movie['Cinema_Name']); ?> &middot; <?php echo htmlspecialchars($movie['Bran_Location']); ?></span>
                 </div>
             </div>
-            <?php if ($movie['Status'] !== 'coming'): ?>
-            <div class="info-row">
-                <span class="info-ic"><?php echo icon('pin',18); ?></span>
-                <div class="info-text">
-                    <span class="info-k">Hall / Location</span>
-                    <span class="info-v"><?php echo htmlspecialchars($movie['Location']); ?></span>
-                </div>
-            </div>
-            <?php endif; ?>
             <div class="info-row">
                 <span class="info-ic"><?php echo icon('phone',18); ?></span>
                 <div class="info-text">
@@ -106,22 +101,32 @@ $hasTrailer = (bool) preg_match('/^[A-Za-z0-9_-]+\.mp4$/i', $trailerFile)
 <?php else: ?>
         <h3 class="detail-sub" style="margin-top:28px;">Available Showtimes</h3>
         <?php
-        // Group upcoming showtimes by date so they are easy to scan.
-        $byDate = [];
+        // Group upcoming showtimes by outlet, then by date. The customer chooses
+        // where to watch and a time; the hall is already fixed for each show.
+        $byLoc = [];
         while ($s = $showtimes->fetch_assoc()) {
-            $byDate[$s['Date']][] = $s;
+            $loc = $s['Bran_Location'] ?: $s['Cinema_Name'];
+            $byLoc[$loc]['cinema'] = $s['Cinema_Name'];
+            $byLoc[$loc]['dates'][$s['Date']][] = $s;
         }
         $firstSlot = null;
-        foreach ($byDate as $slots) { $firstSlot = $slots[0]['Movie_ID']; break; }
+        foreach ($byLoc as $loc) { foreach ($loc['dates'] as $slots) { $firstSlot = $slots[0]['Movie_ID']; break 2; } }
         ?>
-        <?php if ($byDate): ?>
-        <div class="showtime-days">
-            <?php foreach ($byDate as $date => $slots): ?>
-            <div class="showtime-day">
-                <div class="std-date"><?php echo icon('calendar', 14); ?> <?php echo date("D, j M Y", strtotime($date)); ?></div>
-                <div class="std-times">
-                    <?php foreach ($slots as $s): ?>
-                    <a class="showtime-chip" href="booking.php?movie_id=<?php echo $s['Movie_ID']; ?>&t=1"><?php echo date("g:i A", strtotime($s['Showtime'])); ?></a>
+        <?php if ($byLoc): ?>
+        <div class="showtime-locs">
+            <?php foreach ($byLoc as $locName => $loc): ?>
+            <div class="showtime-loc">
+                <div class="stl-head"><?php echo icon('pin', 15); ?> <span class="stl-name"><?php echo htmlspecialchars($locName); ?></span><span class="stl-cinema"><?php echo htmlspecialchars($loc['cinema']); ?></span></div>
+                <div class="showtime-days">
+                    <?php foreach ($loc['dates'] as $date => $slots): ?>
+                    <div class="showtime-day">
+                        <div class="std-date"><?php echo icon('calendar', 14); ?> <?php echo date("D, j M Y", strtotime($date)); ?></div>
+                        <div class="std-times">
+                            <?php foreach ($slots as $s): ?>
+                            <a class="showtime-chip" href="booking.php?movie_id=<?php echo $s['Movie_ID']; ?>&t=1" title="<?php echo htmlspecialchars($s['Hall']); ?>"><?php echo date("g:i A", strtotime($s['Showtime'])); ?></a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
                     <?php endforeach; ?>
                 </div>
             </div>

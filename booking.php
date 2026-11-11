@@ -30,9 +30,14 @@ if ($myAge === null) $myAge = (int) ($me['Cust_Age'] ?? 0);
 // Cinema showtimes are Singapore local time.
 $nowSingapore = new DateTimeImmutable('now', new DateTimeZone('Asia/Singapore'));
 $nowStr = $nowSingapore->format('Y-m-d H:i:s');
-$stmt = $conn->prepare("SELECT Movie_ID, Title, Date, Showtime, Certificate FROM movie
-                        WHERE Status = 'showing' AND TIMESTAMP(Date, Showtime) > ?
-                        ORDER BY Date, Showtime");
+$stmt = $conn->prepare("SELECT m.Movie_ID, m.Title, m.Date, m.Showtime, m.Certificate,
+                               m.Location AS Hall, m.Genre, m.Duration_Min, m.Poster, m.Backdrop,
+                               c.Cinema_Name, b.Bran_Location
+                        FROM movie m
+                        LEFT JOIN cinema c ON m.Cinema_ID = c.Cinema_ID
+                        LEFT JOIN branch b ON c.Bran_ID = b.Bran_ID
+                        WHERE m.Status = 'showing' AND TIMESTAMP(m.Date, m.Showtime) > ?
+                        ORDER BY b.Bran_Location, m.Date, m.Showtime");
 $stmt->bind_param('s', $nowStr);
 $stmt->execute();
 $moviesRows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -152,9 +157,12 @@ while ($o = $occRes->fetch_assoc()) {
 }
 
 
-// Group showtimes by film for the two-step movie → time pickers
+// Group showtimes by film, then by outlet: Movie → Location → Showtime.
 $byTitle = [];
-foreach ($moviesRows as $m) { $byTitle[$m['Title']][] = $m; }
+foreach ($moviesRows as $m) {
+    $loc = $m['Bran_Location'] ?: $m['Cinema_Name'];
+    $byTitle[$m['Title']][$loc][] = $m;
+}
 
 // Which showtime is pre-selected (from ?movie_id, or a failed POST)
 $selectedId = $preselectMovie;
@@ -165,9 +173,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['movie_id'])) {
     $selectedId = intval($_POST['movie_id']);
     $autoSelectTime = true; // keep the chosen time after a failed submit
 }
+// Resolve the pre-selected film + outlet from the chosen showtime id.
 $preselectTitle = '';
+$preselectLoc = '';
 foreach ($moviesRows as $m) {
-    if ($m['Movie_ID'] == $selectedId) { $preselectTitle = $m['Title']; break; }
+    if ($m['Movie_ID'] == $selectedId) {
+        $preselectTitle = $m['Title'];
+        $preselectLoc = $m['Bran_Location'] ?: $m['Cinema_Name'];
+        break;
+    }
 }
 // Fallback: the link may point at a past/representative showtime id (e.g. a card's
 // "Book Now"). If so, still pre-select the film by title so its upcoming times load.
@@ -176,6 +190,25 @@ if ($preselectTitle === '' && $bookMovie && isset($byTitle[$bookMovie['Title']])
 }
 
 include 'includes/header.php';
+
+// Per-title metadata so the "Now Booking" header can update when the Movie changes.
+// (Built after the header include because formatDuration() is defined there.)
+$movieMeta = [];
+foreach ($moviesRows as $m) {
+    if (isset($movieMeta[$m['Title']])) continue;
+    $posterFile = poster_file($m['Poster']);
+    $backFile = trim((string) $m['Backdrop']);
+    $backUrl = ($backFile !== '' && file_exists(__DIR__ . '/images/backdrops/' . $backFile))
+        ? 'images/backdrops/' . rawurlencode($backFile) : '';
+    $movieMeta[$m['Title']] = [
+        'title'    => $m['Title'],
+        'cert'     => $m['Certificate'],
+        'genre'    => $m['Genre'],
+        'duration' => !empty($m['Duration_Min']) ? formatDuration($m['Duration_Min']) : '',
+        'poster'   => $posterFile !== '' ? 'images/posters/' . rawurlencode($posterFile) : '',
+        'backdrop' => $backUrl,
+    ];
+}
 ?>
 
 <?php if ($bookMovie): ?>
@@ -240,12 +273,19 @@ include 'includes/header.php';
             <label for="movie_pick">Movie</label>
             <select id="movie_pick" required>
                 <option value="">-- Select a movie --</option>
-                <?php foreach ($byTitle as $title => $sts):
+                <?php foreach ($byTitle as $title => $locs):
+                    $firstLoc = reset($locs); $cert = $firstLoc[0]['Certificate'] ?? '';
                     $sel = ($preselectTitle === $title) ? 'selected' : ''; ?>
                     <option value="<?php echo htmlspecialchars($title); ?>" <?php echo $sel; ?>>
-                        <?php echo htmlspecialchars($title); ?> (<?php echo htmlspecialchars($sts[0]['Certificate']); ?>)
+                        <?php echo htmlspecialchars($title); ?> (<?php echo htmlspecialchars($cert); ?>)
                     </option>
                 <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="loc_pick">Location</label>
+            <select id="loc_pick" required>
+                <option value="">-- Select a location --</option>
             </select>
         </div>
         <div class="form-group">
@@ -253,6 +293,7 @@ include 'includes/header.php';
             <select id="movie_id" name="movie_id" required>
                 <option value="">-- Select a time --</option>
             </select>
+            <div id="hallNote" class="hint" style="margin-top:6px;"></div>
         </div>
         <div class="form-group">
             <label for="payment_type">Payment Method <small>(demo only — no actual charge)</small></label>
@@ -333,36 +374,102 @@ var sumQty   = document.getElementById("sumQty");
 var sumTotal = document.getElementById("sumTotal");
 var hintEl   = document.getElementById("seatHint");
 var moviePick = document.getElementById("movie_pick");
-var PRESELECT_ID = <?php echo $autoSelectTime ? (int) $selectedId : 0; ?>;
+var locPick   = document.getElementById("loc_pick");
+var hallNote  = document.getElementById("hallNote");
+var PRESELECT_ID    = <?php echo $autoSelectTime ? (int) $selectedId : 0; ?>;
+var PRESELECT_LOC   = <?php echo json_encode($autoSelectTime ? $preselectLoc : '', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
 
-// Showtimes grouped by film title (escaped JSON, not quoted JavaScript).
-var showtimesByTitle = <?php
-    $timesJson = [];
-    foreach ($byTitle as $title => $sts) {
-        $timesJson[$title] = [];
-        foreach ($sts as $entry) {
-            $timesJson[$title][] = [
-                'id' => (int) $entry['Movie_ID'],
-                'label' => date('d M Y', strtotime($entry['Date'])) . ', ' . date('g:i A', strtotime($entry['Showtime']))
-            ];
+// Showtimes grouped by film title, then by outlet (escaped JSON).
+//   showsByTitle[title][location] = [ {id, label, hall}, ... ]
+var showsByTitle = <?php
+    $showsJson = [];
+    foreach ($byTitle as $title => $locs) {
+        $showsJson[$title] = [];
+        foreach ($locs as $loc => $entries) {
+            $showsJson[$title][$loc] = [];
+            foreach ($entries as $e) {
+                $showsJson[$title][$loc][] = [
+                    'id'    => (int) $e['Movie_ID'],
+                    'label' => date('d M Y', strtotime($e['Date'])) . ', ' . date('g:i A', strtotime($e['Showtime'])),
+                    'hall'  => $e['Hall'],
+                ];
+            }
         }
     }
-    echo json_encode($timesJson, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+    echo json_encode($showsJson, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 ?>;
 
-// Fill the Showtime dropdown based on the chosen Movie
+// Per-title metadata for the "Now Booking" header (title, cert, genre, duration, images).
+var MOVIE_META = <?php echo json_encode($movieMeta, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+
+// Update the hero header to match the selected movie.
+var bookHero = document.querySelector(".book-hero");
+function escHtml(s){ return (s==null?"":String(s)).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function updateHero() {
+    if (!bookHero) return;
+    var m = MOVIE_META[moviePick.value];
+    if (!m) return;
+    var titleEl = bookHero.querySelector(".bh-title");
+    var metaEl  = bookHero.querySelector(".bh-meta");
+    var posterEl = bookHero.querySelector(".bh-poster");
+    if (titleEl) titleEl.textContent = m.title;
+    bookHero.setAttribute("data-genre", m.genre || "");
+    bookHero.style.backgroundImage = m.backdrop ? ("url('" + m.backdrop + "')") : "";
+    if (posterEl) posterEl.style.backgroundImage = m.poster ? ("url('" + m.poster + "')") : "";
+    if (metaEl) {
+        var cls = (m.cert || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+        var html = "";
+        if (m.cert)     html += '<span class="cert-badge cert-' + cls + '">' + escHtml(m.cert) + '</span>';
+        if (m.genre)    html += '<span>' + escHtml(m.genre) + '</span>';
+        if (m.duration) html += '<span>&middot; ' + escHtml(m.duration) + '</span>';
+        metaEl.innerHTML = html;
+    }
+}
+
+// Fill the Location dropdown from the chosen Movie.
+function populateLocations(selLoc) {
+    var locs = showsByTitle[moviePick.value] || {};
+    locPick.innerHTML = '<option value="">-- Select a location --</option>';
+    Object.keys(locs).forEach(function (loc) {
+        var o = document.createElement("option");
+        o.value = loc; o.textContent = loc;
+        if (selLoc && loc === selLoc) o.selected = true;
+        locPick.appendChild(o);
+    });
+}
+
+// Fill the Showtime dropdown from the chosen Movie + Location.
 function populateTimes(selectId) {
-    var times = showtimesByTitle[moviePick.value] || [];
+    var times = (showsByTitle[moviePick.value] || {})[locPick.value] || [];
     movieSelect.innerHTML = '<option value="">-- Select a time --</option>';
     times.forEach(function (t) {
         var o = document.createElement("option");
         o.value = t.id;
         o.textContent = t.label;
+        o.setAttribute("data-hall", t.hall || "");
         if (selectId && String(t.id) === String(selectId)) o.selected = true;
         movieSelect.appendChild(o);
     });
+    updateHallNote();
 }
+
+// Show the auto-allocated hall for the chosen show (the customer never picks it).
+function updateHallNote() {
+    var opt = movieSelect.options[movieSelect.selectedIndex];
+    var hall = opt ? opt.getAttribute("data-hall") : "";
+    hallNote.textContent = (movieSelect.value && hall) ? ("Seated in " + hall + " · " + locPick.value) : "";
+}
+
 moviePick.addEventListener("change", function () {
+    updateHero();
+    var locKeys = Object.keys(showsByTitle[moviePick.value] || {});
+    populateLocations(locKeys.length ? locKeys[0] : null); // auto-fill first outlet
+    populateTimes(null);                                    // but don't auto-pick a time
+    selected = [];
+    buildGrid();
+    updateSummary();
+});
+locPick.addEventListener("change", function () {
     populateTimes(null);
     selected = [];
     buildGrid();
@@ -457,6 +564,7 @@ movieSelect.addEventListener("change", function () {
     selected = [];
     buildGrid();
     updateSummary();
+    updateHallNote();
     var ar = movieMinAge[movieSelect.value];
     if (ar && USER_AGE < ar.min) {
         hintEl.textContent = "⚠ Rated " + ar.cert + " — you must be at least " + ar.min + " to book this film.";
@@ -465,8 +573,17 @@ movieSelect.addEventListener("change", function () {
 
 // Restore any seats kept after a failed server-side validation
 (function restore() {
-    // Populate showtimes for a pre-selected movie (from details page or failed POST)
-    if (moviePick.value) populateTimes(PRESELECT_ID);
+    // Pre-fill movie → location → time (from the details page or a failed POST).
+    // Location auto-fills to the chosen outlet, or the first one if none was given,
+    // so the customer only needs to pick a time (a time is auto-selected only when
+    // they arrived from a specific showtime chip, i.e. PRESELECT_ID is set).
+    if (moviePick.value) {
+        updateHero();
+        var locKeys = Object.keys(showsByTitle[moviePick.value] || {});
+        var chosenLoc = PRESELECT_LOC || (locKeys.length ? locKeys[0] : '');
+        populateLocations(chosenLoc);
+        if (locPick.value) populateTimes(PRESELECT_ID);
+    }
 
     var prev = seatsInput.value.trim();
     if (prev) {
@@ -483,6 +600,7 @@ document.getElementById("bookingForm").addEventListener("submit", function (e) {
 
     if (!document.getElementById("payment_type").value) msg += "Please select a payment method.\n";
     if (!moviePick.value) msg += "Please select a movie.\n";
+    else if (!locPick.value) msg += "Please select a location.\n";
     else if (!movieSelect.value) msg += "Please select a showtime.\n";
     if (selected.length < 1) msg += "Please select at least one seat.\n";
     if (selected.length > MAX_SEATS) msg += "You can book a maximum of " + MAX_SEATS + " seats.\n";
