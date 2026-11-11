@@ -3,10 +3,17 @@
 date_default_timezone_set('Asia/Singapore');
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
+// Local XAMPP defaults. On a web host, create includes/db_config.php
+// (gitignored) to override these with the host's MySQL credentials —
+// no need to edit this file. See includes/db_config.sample.php.
 $db_host = 'localhost';
 $db_user = 'root';
 $db_pass = '';
 $db_name = 'cinebook_db';
+
+if (is_file(__DIR__ . '/db_config.php')) {
+    require __DIR__ . '/db_config.php';
+}
 
 try {
     $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);

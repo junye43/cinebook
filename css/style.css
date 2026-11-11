@@ -154,6 +154,33 @@ nav.main-nav { flex: 1; }
 :root[data-theme="light"] .theme-toggle .ico-sun { display: none; }
 :root[data-theme="light"] .theme-toggle .ico-moon { display: inline-block; }
 
+/* Hamburger menu button — hidden on desktop, shown on small screens (see end of file) */
+.nav-toggle {
+    display: none;
+    width: 40px; height: 40px;
+    flex: 0 0 auto;
+    border-radius: 10px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    padding: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+.nav-toggle:hover { border-color: var(--gold); }
+.nav-toggle .nt-bar {
+    display: block;
+    width: 20px; height: 2px;
+    background: var(--text-mid);
+    border-radius: 2px;
+    transition: transform 0.25s ease, opacity 0.2s ease;
+}
+.nav-toggle.open .nt-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-toggle.open .nt-bar:nth-child(2) { opacity: 0; }
+.nav-toggle.open .nt-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
 /* ---------- Layout ---------- */
 .page-wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 28px 16px 60px; flex: 1; }
 @media (max-width: 600px) { .page-wrap { padding: 20px 12px 48px; } }
@@ -1142,4 +1169,56 @@ table.data-table tbody tr:last-child td { border-bottom: none; }
     display: block;
     border-radius: 16px;
     margin-bottom: 28px;
+}
+/* ==========================================================
+   MOBILE BOOKING FIXES (placed last so they win the cascade)
+   The seat row is ~371px wide, which forced the booking panels
+   wider than a phone screen and clipped the seat map, the
+   "Booking as" card and the summary values. Shrinking the seat
+   grid lets the single-column layout fit within small screens.
+========================================================== */
+@media (max-width: 620px) {
+    .panel { min-width: 0; padding: 18px 12px; }
+    .seat { width: 21px; height: 21px; }
+    .seat-row { gap: 4px; }
+    .row-label { width: 13px; font-size: 0.65em; }
+    .aisle { width: 10px; }
+    .seat-legend { gap: 12px 16px; }
+    .screen-curve { margin: 0 6px; }
+    .summary-row { gap: 10px; }
+    .summary-row .val { text-align: right; word-break: break-word; }
+}
+@media (max-width: 380px) {
+    .seat { width: 18px; height: 18px; }
+    .seat-row { gap: 3px; }
+}
+
+/* ==========================================================
+   MOBILE NAV — collapse the header links behind a hamburger
+   (placed last so it overrides the earlier header rules)
+========================================================== */
+@media (max-width: 760px) {
+    .nav-toggle { display: inline-flex; }
+    .header-inner { flex-wrap: wrap; gap: 10px 12px; }
+    .logo { order: 0; }
+    .theme-toggle { order: 1; margin-left: auto; }
+    .nav-toggle { order: 2; }
+    .header-search { order: 3; flex: 1 1 100%; min-width: 0; }
+
+    /* Nav hidden until the hamburger is tapped, then a full-width dropdown */
+    nav.main-nav { order: 4; flex: 1 1 100%; width: 100%; display: none; }
+    nav.main-nav.open { display: block; }
+    .nav-links {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        justify-content: flex-start;
+        border-top: 1px solid var(--border);
+    }
+    .nav-links li { width: 100%; }
+    .nav-links a {
+        display: block;
+        padding: 13px 8px;
+        border-radius: 8px;
+    }
 }

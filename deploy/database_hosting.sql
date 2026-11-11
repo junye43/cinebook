@@ -1,0 +1,217 @@
+-- ============================================================
+-- CineBook — HOSTING import (shared hosts: InfinityFree, etc.)
+-- Same as database.sql but WITHOUT "CREATE DATABASE" / "USE",
+-- because the host already created the database for you.
+--
+-- HOW TO IMPORT (phpMyAdmin on the host):
+--   1. In the control panel, open the database the host made for you
+--      (e.g. epiz_XXXXXXXX_cinebook) in phpMyAdmin.
+--   2. With THAT database selected, click "Import", choose this file, "Go".
+-- DANGER: this DROPS existing tables, accounts and bookings in that DB.
+-- ============================================================
+
+
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS transaction;
+DROP TABLE IF EXISTS reservation_seat;
+DROP TABLE IF EXISTS reservation;
+DROP TABLE IF EXISTS payment_type;
+DROP TABLE IF EXISTS customer;
+DROP TABLE IF EXISTS movie;
+DROP TABLE IF EXISTS cinema;
+DROP TABLE IF EXISTS branch;
+DROP TABLE IF EXISTS manager;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ---------------------------------------------------
+-- MANAGER
+-- ---------------------------------------------------
+CREATE TABLE manager (
+    Manager_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Manager_Details VARCHAR(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------
+-- BRANCH  (has -> Manager)
+-- ---------------------------------------------------
+CREATE TABLE branch (
+    Bran_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Bran_Location VARCHAR(150) NOT NULL,
+    Manager_ID INT,
+    FOREIGN KEY (Manager_ID) REFERENCES manager(Manager_ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------
+-- CINEMA (hosted at -> Branch)
+-- ---------------------------------------------------
+CREATE TABLE cinema (
+    Cinema_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Cinema_Name VARCHAR(100) NOT NULL,
+    Cinema_Cont VARCHAR(20),
+    Bran_ID INT,
+    FOREIGN KEY (Bran_ID) REFERENCES branch(Bran_ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------
+-- MOVIE (shown at -> Cinema)
+--   Poster      = card image file in images/posters/
+--   Backdrop    = wide hero image file in images/backdrops/
+--   Certificate = film rating (e.g. PG13, NC16)
+--   Stars       = editorial star rating 1-5
+--   Status      = 'showing' or 'coming'
+-- ---------------------------------------------------
+CREATE TABLE movie (
+    Movie_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Location VARCHAR(150),
+    Date DATE,
+    Showtime TIME,
+    Description TEXT,
+    Title VARCHAR(150) NOT NULL,
+    Poster VARCHAR(255) NOT NULL DEFAULT '',
+    Backdrop VARCHAR(255) NOT NULL DEFAULT '',
+    Trailer_File VARCHAR(255) NULL DEFAULT NULL,
+    Genre VARCHAR(80),
+    Duration_Min INT,
+    Certificate VARCHAR(10) DEFAULT 'PG',
+    Stars TINYINT DEFAULT 4,
+    Status VARCHAR(20) DEFAULT 'showing',
+    Cinema_ID INT,
+    FOREIGN KEY (Cinema_ID) REFERENCES cinema(Cinema_ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------
+-- CUSTOMER
+-- ---------------------------------------------------
+CREATE TABLE customer (
+    Cust_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Cust_Name VARCHAR(80) NOT NULL,
+    Cust_Lname VARCHAR(80) NOT NULL,
+    Cust_Age INT,
+    Cust_DOB DATE,
+    Cust_Address VARCHAR(255),
+    Cust_Number VARCHAR(20),
+    Email VARCHAR(120) UNIQUE NOT NULL,
+    Password VARCHAR(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------
+-- RESERVATION (made by <- Customer, for -> Movie)
+-- ---------------------------------------------------
+CREATE TABLE reservation (
+    Res_Code INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    Time TIME NOT NULL,
+    Date DATE NOT NULL,
+    Cont_Num VARCHAR(20),
+    Seats VARCHAR(50) NOT NULL,
+    Num_Tickets INT NOT NULL DEFAULT 1,
+    Cust_ID INT,
+    Movie_ID INT,
+    FOREIGN KEY (Cust_ID) REFERENCES customer(Cust_ID),
+    FOREIGN KEY (Movie_ID) REFERENCES movie(Movie_ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------
+-- RESERVATION_SEAT: one row per taken seat; database-enforced uniqueness.
+-- Every Movie_ID represents one specific showtime.
+-- ---------------------------------------------------
+CREATE TABLE reservation_seat (
+    Res_Code INT NOT NULL,
+    Movie_ID INT NOT NULL,
+    Seat_Code VARCHAR(3) NOT NULL,
+    PRIMARY KEY (Movie_ID, Seat_Code),
+    UNIQUE KEY uniq_reservation_seat (Res_Code, Seat_Code),
+    FOREIGN KEY (Res_Code) REFERENCES reservation(Res_Code) ON DELETE CASCADE,
+    FOREIGN KEY (Movie_ID) REFERENCES movie(Movie_ID),
+    CONSTRAINT chk_cb_seat_code CHECK (Seat_Code REGEXP '^[A-H](10|[1-9])$')
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------
+-- PAYMENT_TYPE
+-- ---------------------------------------------------
+CREATE TABLE payment_type (
+    Payment_Type_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Payment_Type VARCHAR(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------
+-- TRANSACTION (for -> Payment_type, Customer, Reservation)
+-- ---------------------------------------------------
+CREATE TABLE transaction (
+    Trans_No INT AUTO_INCREMENT PRIMARY KEY,
+    Cust_ID INT,
+    Res_ID INT,
+    Trans_Date DATE NOT NULL,
+    Start_Date DATE,
+    End_Date DATE,
+    Total_Payment DECIMAL(8,2) NOT NULL,
+    Payment_Type_ID INT,
+    FOREIGN KEY (Cust_ID) REFERENCES customer(Cust_ID),
+    FOREIGN KEY (Res_ID) REFERENCES reservation(Res_Code),
+    FOREIGN KEY (Payment_Type_ID) REFERENCES payment_type(Payment_Type_ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- SAMPLE DATA
+-- ============================================================
+INSERT INTO manager (Manager_Details) VALUES
+('Tan Wei Ming - Regional Manager'),
+('Sarah Lim - Branch Manager');
+
+INSERT INTO branch (Bran_Location, Manager_ID) VALUES
+('Jurong Point', 1),
+('Orchard Road', 2);
+
+INSERT INTO cinema (Cinema_Name, Cinema_Cont, Bran_ID) VALUES
+('Silver Village Jurong', '65001234', 1),
+('Silver Village Orchard', '65005678', 2);
+
+-- Now Showing: generated relative to CURDATE() so the demo never expires.
+-- Each film plays at BOTH outlets (Cinema_ID 1 & 2), each in its own hall
+-- (Hall <idx>), three times a day across the next 5 days. The showtime row
+-- already fixes the outlet + hall, so the customer never picks a hall.
+INSERT INTO movie (Location, Date, Showtime, Description, Title, Poster, Backdrop, Genre, Duration_Min, Certificate, Stars, Status, Cinema_ID)
+SELECT CONCAT('Hall ', ((cat.idx - 1 + d.n + CASE WHEN loc.cid = 1 THEN 0 ELSE 3 END) % 6) + 1),
+       DATE_ADD(CURDATE(), INTERVAL d.n DAY),
+       t.tm,
+       cat.descr, cat.title, cat.poster, cat.backdrop, cat.genre,
+       cat.dur, cat.cert, cat.stars, 'showing', loc.cid
+FROM (
+    SELECT 1 AS idx, 'Stellar Horizon'     AS title, 'stellarhorizon.png'    AS poster, 'stellarhorizonposter.png'    AS backdrop, 'Sci-Fi'  AS genre, 128 AS dur, 'PG13' AS cert, 5 AS stars, 'A brilliant neurosurgeon is drawn into the world of the mystic arts on a journey of physical and spiritual healing, confronting a danger that threatens the entire multiverse.' AS descr
+    UNION ALL SELECT 2, 'The Last Lighthouse', 'thelastlighthouse.png', 'thelastlighthouseposter.png', 'Drama',    105, 'PG',   4, 'A heartwarming story of friendship and courage set on a remote coast, following a keeper who guards more than just the light.'
+    UNION ALL SELECT 3, 'Midnight Protocol',   'midnightprotocol.png',  'midnightprotocolposter.png',  'Action',   115, 'NC16', 3, 'Non-stop action as an elite team races against time to stop a global threat hidden in plain sight.'
+    UNION ALL SELECT 4, 'Weekend Warriors',    'weekendwarriors.png',   'weekendwarriorsposter.png',   'Comedy',    98, 'PG',   4, 'A laugh-out-loud comedy about a chaotic family weekend that spirals hilariously out of control.'
+    UNION ALL SELECT 5, 'Silent Echo',         'silentecho.png',        'silentechoposter.png',        'Thriller', 122, 'M18',  4, 'A gripping thriller where nothing is as it seems and every clue leads deeper into the dark.'
+    UNION ALL SELECT 6, 'Painted Skies',       'paintedskies.png',      'paintedskiesposter.png',      'Family',    92, 'PG',   5, 'An animated adventure across enchanted lands, full of heart, wonder and unlikely heroes.'
+) AS cat
+CROSS JOIN (SELECT 1 AS cid UNION ALL SELECT 2) AS loc
+CROSS JOIN (SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4) AS d
+CROSS JOIN (SELECT '12:30:00' AS tm UNION ALL SELECT '16:00:00' UNION ALL SELECT '19:30:00') AS t;
+
+-- Coming Soon: releases in 2027 (Poster and Backdrop image files already exist)
+INSERT INTO movie (Location, Date, Showtime, Description, Title, Poster, Backdrop, Genre, Duration_Min, Certificate, Stars, Status, Cinema_ID) VALUES
+('Hall 1', '2027-01-15', '20:00:00', 'A kingdom rises and a hero is forged in this sweeping epic of loyalty, betrayal and destiny.',           'Crown of Ash',   'crownofash.png',   'crownofashposter.png', 'Drama',  134, 'PG13', 4, 'coming', 1),
+('Hall 2', '2027-02-19', '21:00:00', 'When the city sleeps, one detective uncovers a conspiracy that reaches the highest towers.',              'Neon Alibi',     'neonalibi.png',    'neonalibiposter.png', 'Action', 118, 'NC16', 4, 'coming', 2),
+('Hall 3', '2027-03-12', '17:30:00', 'A tiny hero with a big heart proves that size is never a limit when courage leads the way.',              'Pocket Dynamo',  'pocketdynamo.png', 'pocketdynamoposter.png', 'Family', 101, 'PG',   3, 'coming', 1),
+('Hall 4', '2027-04-16', '19:45:00', 'Two rivals, one prize, and a race across the stars that will decide the fate of a galaxy.',              'Orbit Run',      'orbitrun.png',     'orbitrunposter.png', 'Sci-Fi', 126, 'PG13', 5, 'coming', 2);
+
+INSERT INTO payment_type (Payment_Type) VALUES
+('Credit Card'), ('Debit Card'), ('PayNow');
+
+
+-- ---------------------------------------------------
+-- LOCAL MP4 MOVIE TRAILERS
+-- Video files belong in assets/trailers/ in the project folder.
+-- The website hides the trailer button until the file exists.
+-- Apply after the extra showtime rows have been inserted.
+-- ---------------------------------------------------
+UPDATE movie SET Trailer_File = 'stellar_horizon.mp4' WHERE Title = 'Stellar Horizon';
+UPDATE movie SET Trailer_File = 'the_last_lighthouse.mp4' WHERE Title = 'The Last Lighthouse';
+UPDATE movie SET Trailer_File = 'midnight_protocol.mp4' WHERE Title = 'Midnight Protocol';
+UPDATE movie SET Trailer_File = 'weekend_warriors.mp4' WHERE Title = 'Weekend Warriors';
+UPDATE movie SET Trailer_File = 'silent_echo.mp4' WHERE Title = 'Silent Echo';
+UPDATE movie SET Trailer_File = 'painted_skies.mp4' WHERE Title = 'Painted Skies';
+UPDATE movie SET Trailer_File = 'crown_of_ash.mp4' WHERE Title = 'Crown of Ash';
+UPDATE movie SET Trailer_File = 'neon_alibi.mp4' WHERE Title = 'Neon Alibi';
+UPDATE movie SET Trailer_File = 'pocket_dynamo.mp4' WHERE Title = 'Pocket Dynamo';
+UPDATE movie SET Trailer_File = 'orbit_run.mp4' WHERE Title = 'Orbit Run';

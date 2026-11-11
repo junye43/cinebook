@@ -8,3 +8,6 @@
 # Report / documentation deliverables (kept outside the code repo)
 *.docx
 *.pdf
+
+# Live hosting DB credentials (created on the server only)
+includes/db_config.php

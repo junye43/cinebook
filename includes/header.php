@@ -61,7 +61,7 @@ function popcornRating($n) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="CineBook — browse movie showtimes across our cinemas and book your seats online.">
 <link rel="icon" type="image/png" href="images/cinebooklogo.png">
-<link rel="stylesheet" href="css/style.css?v=21">
+<link rel="stylesheet" href="css/style.css?v=24">
 <script>
 /* Apply the saved theme before paint (prevents a flash of the wrong theme) */
 (function () {
@@ -75,7 +75,10 @@ function popcornRating($n) {
         <a href="index.php" class="logo" title="CineBook home" aria-label="CineBook home">
             <img src="images/cinebooklogo.png" alt="CineBook Logo">
         </a>
-        <nav class="main-nav" aria-label="Main navigation">
+        <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="primaryNav">
+            <span class="nt-bar"></span><span class="nt-bar"></span><span class="nt-bar"></span>
+        </button>
+        <nav class="main-nav" id="primaryNav" aria-label="Main navigation">
             <ul class="nav-links">
                 <li><a href="movies.php"<?php echo navActive('movies.php'); ?>>Movies</a></li>
                 <li><a href="about.php"<?php echo navActive('about.php'); ?>>Theatres</a></li>

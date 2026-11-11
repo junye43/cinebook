@@ -61,6 +61,18 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // Mobile hamburger menu: toggle the collapsed nav
+    var navToggle = document.getElementById("navToggle");
+    var primaryNav = document.getElementById("primaryNav");
+    if (navToggle && primaryNav) {
+        navToggle.addEventListener("click", function () {
+            var open = primaryNav.classList.toggle("open");
+            navToggle.classList.toggle("open", open);
+            navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+            navToggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+        });
+    }
+
     // Clickable table rows (e.g. My Bookings → ticket view)
     document.querySelectorAll(".clickable-row").forEach(function (row) {
         row.addEventListener("click", function (e) {
