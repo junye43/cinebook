@@ -2,6 +2,8 @@
 
 **IE4727 Web Application Design — Group Project (Theme 5: Cinema)**
 
+https://cinebook.freedev.app/
+
 CineBook is a cinema ticket booking web portal where customers can browse films
 showing across multiple cinema outlets, view showtimes, register an account, pick
 seats on an interactive seat map, and receive a booking confirmation. It is built
